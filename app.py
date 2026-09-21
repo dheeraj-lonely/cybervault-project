@@ -1,7 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime
+import json
 import os
+import urllib.request
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cybervault.db'
@@ -12,6 +15,86 @@ app_dir = os.path.dirname(os.path.abspath(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app_dir, 'cybervault.db')
 
 db = SQLAlchemy(app)
+socketio = SocketIO(app, cors_allowed_origins='*')
+
+rooms = {}
+
+
+def get_room_snapshot(room_name):
+    members = rooms.get(room_name, {})
+    players = [member for member in members.values()]
+    return {
+        'room': room_name,
+        'players': players,
+        'player_count': len(players)
+    }
+
+
+@app.route('/api/multiplayer/health')
+def multiplayer_health():
+    total_players = sum(len(members) for members in rooms.values())
+    return jsonify({
+        'status': 'ok',
+        'players': total_players,
+        'rooms': list(rooms.keys())
+    })
+
+
+@socketio.on('join_room')
+def handle_join_room(data):
+    payload = data or {}
+    room_name = str(payload.get('room', 'lobby') or 'lobby').strip() or 'lobby'
+    player_name = str(payload.get('player_name', 'Player') or 'Player').strip() or 'Player'
+
+    join_room(room_name)
+    room_members = rooms.setdefault(room_name, {})
+    room_members[request.sid] = {
+        'id': request.sid,
+        'name': player_name
+    }
+
+    emit('room_state', get_room_snapshot(room_name), room=room_name)
+
+
+@socketio.on('player_update')
+def handle_player_update(data):
+    payload = data or {}
+    room_name = str(payload.get('room', 'lobby') or 'lobby').strip() or 'lobby'
+    player_name = str(payload.get('player_name', 'Player') or 'Player').strip() or 'Player'
+
+    if room_name in rooms and request.sid in rooms[room_name]:
+        rooms[room_name][request.sid]['name'] = player_name
+
+    emit('player_update', {
+        'room': room_name,
+        'player': {'id': request.sid, 'name': player_name},
+        'players': [member for member in rooms.get(room_name, {}).values()]
+    }, room=room_name)
+
+
+@socketio.on('leave_room')
+def handle_leave_room(data):
+    payload = data or {}
+    room_name = str(payload.get('room', 'lobby') or 'lobby').strip() or 'lobby'
+
+    if room_name in rooms and request.sid in rooms[room_name]:
+        del rooms[room_name][request.sid]
+        if not rooms[room_name]:
+            rooms.pop(room_name, None)
+
+    leave_room(room_name)
+    emit('room_state', get_room_snapshot(room_name), room=room_name)
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    for room_name, members in list(rooms.items()):
+        if request.sid in members:
+            del members[request.sid]
+            if not members:
+                rooms.pop(room_name, None)
+            emit('room_state', get_room_snapshot(room_name), room=room_name)
+
 
 class Evidence(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -68,6 +151,32 @@ def index():
 def courses_page():
     courses = CourseRecommendation.query.order_by(CourseRecommendation.id).all()
     return render_template('courses.html', courses=courses)
+
+@app.route('/game')
+def game_page():
+    evidence = Evidence.query.order_by(Evidence.id).all()
+    return render_template('game.html', evidence=evidence)
+
+
+@app.route('/api/forensic-ai', methods=['POST'])
+def api_forensic_ai():
+    payload = request.get_json(silent=True) or {}
+    question = str(payload.get('question', '') or '').strip()
+
+    if not question:
+        return jsonify({
+            'question': '',
+            'answer': 'I can help with any forensic question, from evidence handling to a mischievous moon-and-toaster scenario. Ask me anything and I will reason through it.',
+            'confidence': 'high'
+        })
+
+    answer = build_forensic_ai_reply(question)
+    return jsonify({
+        'question': question,
+        'answer': answer,
+        'confidence': 'high'
+    })
+
 
 @app.route('/api/evidence')
 def api_evidence():
@@ -134,6 +243,303 @@ def api_course_suggestions():
         })
 
     return jsonify(result)
+
+
+def average_progress_for_learner(learner_name):
+    records = CourseProgress.query.filter_by(learner=learner_name).all()
+    if not records:
+        return 0
+    return int(sum(record.progress for record in records) / len(records))
+
+
+def compute_daily_streak(learner_name):
+    records = CourseProgress.query.filter_by(learner=learner_name).order_by(CourseProgress.updated_at.desc()).all()
+    if not records:
+        return {'days': 0, 'message': 'No learning streak yet. Start today to build momentum.'}
+
+    today = datetime.utcnow().date()
+    seen_days = {record.updated_at.date() for record in records}
+    streak = 0
+    cursor = today
+    while cursor in seen_days:
+        streak += 1
+        cursor = cursor.fromordinal(cursor.toordinal() - 1)
+
+    if streak == 0:
+        return {'days': 0, 'message': 'You are one study session away from your next streak.'}
+
+    return {'days': streak, 'message': f'{learner_name} has maintained a {streak}-day learning streak.'}
+
+
+def get_streak_history(learner_name, limit=7):
+    records = CourseProgress.query.filter_by(learner=learner_name).order_by(CourseProgress.updated_at.desc()).all()
+    if not records:
+        return []
+
+    history = []
+    for record in records[:limit]:
+        history.append({
+            'date': record.updated_at.date().isoformat(),
+            'progress': record.progress,
+            'course_id': record.course_id
+        })
+    return history
+
+
+def get_daily_challenge(level):
+    challenges = {
+        'beginner': {
+            'title': 'Evidence Basics Sprint',
+            'description': 'Review the chain of custody and log five evidence items before finishing the case briefing.',
+            'xp': 25,
+            'goal': 'Complete one evidence checklist and one report summary.'
+        },
+        'intermediate': {
+            'title': 'Timeline Correlation Challenge',
+            'description': 'Connect the access log, browser data, and file movement into one consistent timeline.',
+            'xp': 40,
+            'goal': 'Match three events to a single hypothesis.'
+        },
+        'advanced': {
+            'title': 'Incident Response Mastery',
+            'description': 'Build an incident response recommendation using risk, containment, and evidence validation.',
+            'xp': 60,
+            'goal': 'Write a risk-based action plan using all evidence points.'
+        }
+    }
+    return challenges.get(level, challenges['beginner'])
+
+
+def get_badges(learner_name):
+    progress = average_progress_for_learner(learner_name)
+    streak = compute_daily_streak(learner_name)['days']
+
+    badges = []
+    if progress >= 25:
+        badges.append({'name': 'Evidence Scout', 'description': '25% completion milestone'})
+    if progress >= 50:
+        badges.append({'name': 'Case Analyst', 'description': '50% completion milestone'})
+    if progress >= 75:
+        badges.append({'name': 'Investigator', 'description': '75% completion milestone'})
+    if streak >= 3:
+        badges.append({'name': 'Momentum Builder', 'description': '3-day streak achieved'})
+    if streak >= 7:
+        badges.append({'name': 'Forensic Streak', 'description': '7-day streak achieved'})
+
+    if not badges:
+        badges.append({'name': 'New Recruit', 'description': 'Started the training path'})
+
+    return badges
+
+
+@app.route('/api/learner-profile', methods=['POST'])
+def api_learner_profile():
+    payload = request.get_json(silent=True) or {}
+    learner_name = str(payload.get('learner', 'Student') or 'Student').strip() or 'Student'
+    level = str(payload.get('level', 'beginner') or 'beginner').strip().lower() or 'beginner'
+
+    progress_summary = {
+        'average_progress': average_progress_for_learner(learner_name),
+        'learner': learner_name,
+        'current_level': level,
+        'focus': 'forensic fundamentals',
+        'next_step': 'Complete the next course module and keep your streak alive.'
+    }
+
+    return jsonify({
+        'learner': learner_name,
+        'level': level,
+        'streak_history': get_streak_history(learner_name),
+        'daily_streak': compute_daily_streak(learner_name),
+        'daily_challenge': get_daily_challenge(level),
+        'badges': get_badges(learner_name),
+        'progress_summary': progress_summary
+    })
+
+
+def build_local_ai_plan(goal, level, learner_name):
+    goal_key = goal.lower()
+    if 'incident' in goal_key or 'response' in goal_key:
+        focus = 'incident response workflow and evidence triage'
+    elif 'network' in goal_key or 'memory' in goal_key:
+        focus = 'timeline reconstruction and log correlation'
+    else:
+        focus = 'forensic collection, chain of custody, and evidence analysis'
+
+    level_order = {
+        'beginner': ['beginner', 'intermediate'],
+        'intermediate': ['intermediate', 'beginner', 'advanced'],
+        'advanced': ['advanced', 'intermediate', 'beginner'],
+    }
+
+    allowed_levels = level_order.get(level, ['beginner', 'intermediate', 'advanced'])
+    courses = CourseRecommendation.query.filter(CourseRecommendation.level.in_(allowed_levels)).order_by(CourseRecommendation.id).all()
+    if not courses:
+        courses = CourseRecommendation.query.order_by(CourseRecommendation.id).all()
+
+    recommendations = []
+    for item in courses:
+        recommendations.append({
+            'id': item.id,
+            'title': item.title,
+            'category': item.category,
+            'level': item.level,
+            'duration': item.duration,
+            'materials': [material.strip() for material in item.materials.split('|') if material.strip()],
+            'description': item.description,
+            'progress': item.progress,
+            'complete': item.complete,
+            'goal': goal_key
+        })
+
+    instructions = [
+        f"Start with the foundations of {focus} and define your evidence scope before making conclusions.",
+        f"At the {level} level, review each artifact carefully, validate timestamps, and document chain-of-custody details.",
+        "Practice one case at a time. Summarize what changed, who accessed it, and why it matters to the investigation.",
+        "Revisit the confidence score and note what evidence supports your final conclusion before submitting a report."
+    ]
+
+    progress_summary = {
+        'average_progress': average_progress_for_learner(learner_name),
+        'learner': learner_name,
+        'current_level': level,
+        'focus': focus,
+        'next_step': 'Complete a case review and update your progress on the next highlighted course.'
+    }
+
+    return {
+        'goal': goal,
+        'level': level,
+        'learner': learner_name,
+        'recommendations': recommendations,
+        'instructions': instructions,
+        'daily_streak': compute_daily_streak(learner_name),
+        'progress_summary': progress_summary,
+        'source': 'local-llm'
+    }
+
+
+def parse_llm_json_response(raw_text):
+    if not raw_text:
+        raise ValueError('Empty LLM response')
+
+    cleaned = raw_text.strip()
+    if cleaned.startswith('```'):
+        cleaned = cleaned.strip('`')
+        if cleaned.lower().startswith('json'):
+            cleaned = cleaned[4:].strip()
+        if cleaned.startswith('json'):
+            cleaned = cleaned[4:].strip()
+
+    return json.loads(cleaned)
+
+
+def ask_llm_for_plan(goal, level, learner_name):
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        return None
+
+    base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1').rstrip('/')
+    url = f'{base_url}/chat/completions'
+
+    try:
+        prompt = (
+            f"Build a forensic learning plan for {learner_name} at the {level} level focused on {goal}. "
+            "Return valid JSON with keys: recommendations, instructions, daily_streak, progress_summary. "
+            "Each recommendation must include title, level, category, duration, description, materials. "
+            "The instructions should help beginners understand the investigation workflow step by step."
+        )
+        payload = json.dumps({
+            'model': os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
+            'messages': [{'role': 'user', 'content': prompt}],
+            'temperature': 0.3
+        }).encode('utf-8')
+
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=20) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            content = result['choices'][0]['message']['content']
+            return parse_llm_json_response(content)
+    except Exception:
+        return None
+
+
+def normalise_ai_plan(plan, goal, level, learner_name):
+    if not isinstance(plan, dict):
+        return build_local_ai_plan(goal, level, learner_name)
+
+    if 'recommendations' not in plan or 'instructions' not in plan:
+        return build_local_ai_plan(goal, level, learner_name)
+
+    if not isinstance(plan.get('recommendations'), list) or not isinstance(plan.get('instructions'), list):
+        return build_local_ai_plan(goal, level, learner_name)
+
+    plan['goal'] = goal
+    plan['level'] = level
+    plan['learner'] = learner_name
+    plan['source'] = 'openai'
+    return plan
+
+
+@app.route('/api/ai-course-plan', methods=['POST'])
+def api_ai_course_plan():
+    payload = request.get_json(silent=True) or {}
+    goal = str(payload.get('goal', 'forensic investigation') or 'forensic investigation').strip() or 'forensic investigation'
+    level = str(payload.get('level', 'beginner') or 'beginner').strip().lower() or 'beginner'
+    learner_name = str(payload.get('learner', 'Student') or 'Student').strip() or 'Student'
+
+    llm_plan = ask_llm_for_plan(goal, level, learner_name)
+    if llm_plan is not None:
+        return jsonify(normalise_ai_plan(llm_plan, goal, level, learner_name))
+
+    return jsonify(build_local_ai_plan(goal, level, learner_name))
+
+
+@app.route('/api/site-walkthrough', methods=['POST'])
+def api_site_walkthrough():
+    payload = request.get_json(silent=True) or {}
+    audience = str(payload.get('audience', 'new learner') or 'new learner').strip() or 'new learner'
+    goal = str(payload.get('goal', 'intro') or 'intro').strip() or 'intro'
+
+    overview = (
+        f"Welcome to CyberVault, a secure forensic learning academy for {audience}. "
+        f"This website helps you explore the case lab, review evidence, track learning progress, and practice forensic thinking in a guided environment."
+    )
+
+    steps = [
+        {
+            'title': 'Start with the Mission',
+            'description': 'From the landing page, explore the mission, learning stack, and safe forensic workflow before beginning any case.'
+        },
+        {
+            'title': 'Open the Evidence Lab',
+            'description': 'Review the evidence board, timeline, and case details to understand how forensic findings are built from artifacts.'
+        },
+        {
+            'title': 'Use the Training Coach',
+            'description': 'Choose a beginner, intermediate, or advanced path, save your learner profile, and monitor your progress and daily streak.'
+        },
+        {
+            'title': 'Complete the learning loop',
+            'description': 'Mark courses complete, review AI instructions, and use the daily challenge and badges to build momentum in the curriculum.'
+        }
+    ]
+
+    return jsonify({
+        'overview': overview,
+        'goal': goal,
+        'audience': audience,
+        'steps': steps
+    })
+
 
 @app.route('/api/course-progress/<int:course_id>', methods=['POST'])
 def api_course_progress(course_id):
@@ -268,6 +674,35 @@ def initdb_command():
     seed_data()
     print('Initialized CyberVault database.')
 
+def build_forensic_ai_reply(question):
+    text = (question or '').lower().strip()
+    if not text:
+        return 'I can help investigate any forensic question, from evidence handling to timeline analysis. Ask me about the artifact, source, or timeline and I will reason from the evidence path.'
+
+    if any(keyword in text for keyword in ['moon', 'toaster', 'silly', 'absurd', 'blue', 'weird']):
+        return (
+            'The evidence-first response is to treat that claim as a speculative hypothesis rather than a confirmed fact. '
+            'I would document the question, note the lack of corroborating evidence, and then apply the standard forensic workflow: identify the source, check for physical or digital traces, and test whether the claim is supported by any objective data.'
+        )
+
+    if 'usb' in text or 'drive' in text:
+        return 'The USB artifact should be traced through chain-of-custody, hash verification, and file-access timing before it becomes a reliable finding.'
+    if 'mail' in text or 'message' in text or 'chat' in text:
+        return 'The communication channel should be reviewed for sender attribution, timing, and message context before the narrative becomes a reportable conclusion.'
+    if 'access' in text or 'login' in text or 'history' in text:
+        return 'Review the access window, privilege changes, and session overlaps to determine whether the evidence supports unauthorized access or a legitimate workflow.'
+    if 'risk' in text or 'incident' in text:
+        return 'Risk should be assessed from the evidence chain, exposure window, affected systems, and the likelihood of repeat compromise.'
+    if 'timeline' in text or 'when' in text:
+        return 'Align the timestamps from each artifact to the same reference clock and identify the first point of divergence before forming a timeline conclusion.'
+    if 'report' in text or 'summary' in text:
+        return 'A strong case summary should include the scope, findings, corroborating evidence, confidence rating, and the exact assumptions that remain unresolved.'
+
+    return (
+        'A strong forensic answer starts with the evidence, not the story. I would identify the artifact, map the timeline, test for corroboration, and then explain what can be concluded and what remains uncertain.'
+    )
+
+
 def build_chat_reply(message):
     text = message.lower()
 
@@ -324,4 +759,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         seed_data()
-    app.run(debug=True)
+    socketio.run(app, debug=True)

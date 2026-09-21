@@ -10,7 +10,7 @@
 <body>
   <div class="page-shell game-page">
     <header class="site-header">
-      <a class="brand" href="#">
+      <a class="brand" href="{{ url_for('index') }}">
         <span class="brand-mark">
           <span class="brand-mark-inner"></span>
         </span>
@@ -18,13 +18,13 @@
       </a>
 
       <nav class="main-nav" aria-label="Main navigation">
-        <a class="nav-link" href="#">Mission</a>
-        <a class="nav-link" href="#">Cases</a>
-        <a class="nav-link" href="#">Evidence</a>
-        <a class="nav-link" href="#">Workflow</a>
+        <a class="nav-link" href="#problem-statement">Mission</a>
+        <a class="nav-link" href="{{ url_for('game_page') }}">Cases</a>
+        <a class="nav-link" href="#problem-statement">Evidence</a>
+        <a class="nav-link" href="{{ url_for('courses_page') }}">Workflow</a>
       </nav>
 
-      <a class="login-link" href="#">
+      <a class="login-link" href="{{ url_for('game_page') }}">
         <span class="login-icon">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2" />
@@ -46,7 +46,8 @@
             private data, or unsafe forensic workflows. The platform focuses on understanding the process behind modern investigations.
           </p>
           <div class="hero-actions">
-            <a class="primary-button small-button" href="{{ url_for('courses_page') }}">Explore Courses</a>
+            <a class="primary-button small-button" href="{{ url_for('game_page') }}">Enter the Game</a>
+            <a class="secondary-button small-button" href="{{ url_for('courses_page') }}">Explore Courses</a>
             <a class="secondary-button small-button" href="#problem-statement">Learn More</a>
           </div>
         </div>
@@ -131,7 +132,7 @@
         </div>
       </section>
 
-      <section class="feature-section">
+      <section id="feature-section" class="feature-section">
         <article class="feature-card">
           <span class="mini-label">01</span>
           <h4>Structured learning flow</h4>
@@ -161,7 +162,8 @@
       </div>
       <div class="footer-links">
         <a href="#problem-statement">Problem</a>
-        <a href="#">Stack</a>
+        <a href="#feature-section">Stack</a>
+        <a href="{{ url_for('game_page') }}">Game</a>
         <a href="{{ url_for('courses_page') }}">Courses</a>
       </div>
       <div class="footer-copy">© 2026 CyberVault</div>

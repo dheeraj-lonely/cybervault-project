@@ -20,7 +20,7 @@
         <a class="nav-link" href="{{ url_for('index') }}">Evidence</a>
         <a class="nav-link active" href="{{ url_for('courses_page') }}">Training</a>
       </nav>
-      <a class="login-link" href="#">
+      <a class="login-link" href="{{ url_for('index') }}">
         <span class="login-icon">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2" />
@@ -36,36 +36,128 @@
       <section class="dashboard-topbar">
         <div class="dashboard-title-wrap">
           <span class="section-kicker">CYBERVAULT // TRAINING</span>
-          <h1>Forensic Training Courses</h1>
+          <h1>Forensic Learning Coach</h1>
         </div>
         <div class="dashboard-actions">
           <a class="primary-button small-button" href="{{ url_for('index') }}">Back to Lab</a>
         </div>
       </section>
 
-      <section class="course-grid">
-        {% for course in courses %}
-          <article class="course-card">
-            <div class="course-card-head">
-              <span class="course-category">{{ course.category }}</span>
-              <span class="course-level">{{ course.level|upper }}</span>
+      <section class="ai-coach-grid">
+        <div class="coach-panel walkthrough-panel">
+          <div class="panel-head">
+            <span class="section-kicker">WEBSITE INTRO</span>
+            <h2>How CyberVault works</h2>
+          </div>
+          <div id="walkthrough-overview" class="walkthrough-overview">Loading website walkthrough…</div>
+          <ol id="walkthrough-steps" class="walkthrough-steps"></ol>
+        </div>
+        <div class="coach-panel main-coach-panel">
+          <div class="panel-head">
+            <span class="section-kicker">AI COACH</span>
+            <h2>Personalized forensic learning plan</h2>
+          </div>
+
+          <form id="learner-profile-form" class="learner-profile-form">
+            <label>
+              <span>Learner name</span>
+              <input id="learner-name-input" type="text" value="Student" placeholder="Enter your name" />
+            </label>
+            <label>
+              <span>Learning level</span>
+              <select id="learner-level-select">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </label>
+            <button type="submit" class="primary-button small-button">Save profile</button>
+          </form>
+
+          <div class="level-switcher" aria-label="Choose learning level">
+            <button class="level-toggle active" type="button" data-level="beginner">Beginner</button>
+            <button class="level-toggle" type="button" data-level="intermediate">Intermediate</button>
+            <button class="level-toggle" type="button" data-level="advanced">Advanced</button>
+          </div>
+
+          <div class="coach-stats">
+            <div class="stat-card">
+              <span class="stat-label">Daily streak</span>
+              <strong id="daily-streak-count">0 days</strong>
+              <small id="daily-streak-message">No streak yet.</small>
             </div>
-            <h3>{{ course.title }}</h3>
-            <p>{{ course.description }}</p>
-            <div class="course-meta">
-              <span><b>Duration:</b> {{ course.duration }}</span>
-              <span><b>Progress:</b> {{ course.progress }}%</span>
+            <div class="stat-card">
+              <span class="stat-label">Average progress</span>
+              <strong id="average-progress">0%</strong>
+              <small id="current-focus">Forensic fundamentals</small>
             </div>
-            <div class="course-materials">
-              <span class="mini-label">Required materials</span>
-              <ul>
-                {% for material in course.materials.split('|') %}
-                  <li>{{ material.strip() }}</li>
-                {% endfor %}
-              </ul>
-            </div>
-          </article>
-        {% endfor %}
+          </div>
+
+          <div class="instruction-panel">
+            <span class="mini-label">AI instructions</span>
+            <ul id="ai-instructions" class="instruction-list"></ul>
+          </div>
+        </div>
+
+        <div class="coach-panel summary-panel">
+          <div class="panel-head small-head">
+            <span class="section-kicker">PROGRESS</span>
+            <h3>Learning summary</h3>
+          </div>
+          <div class="summary-card">
+            <span class="summary-label">Learner</span>
+            <strong id="learner-name">Student</strong>
+          </div>
+          <div class="summary-card">
+            <span class="summary-label">Current level</span>
+            <strong id="current-level">Beginner</strong>
+          </div>
+          <div class="summary-card">
+            <span class="summary-label">Next step</span>
+            <strong id="next-step">Review the evidence workflow.</strong>
+          </div>
+
+          <div class="challenge-panel">
+            <span class="section-kicker">DAILY CHALLENGE</span>
+            <div id="daily-challenge" class="challenge-card"></div>
+          </div>
+
+          <div class="badge-panel">
+            <span class="section-kicker">BADGES</span>
+            <div id="badge-list" class="badge-list"></div>
+          </div>
+
+          <div class="streak-panel">
+            <span class="section-kicker">STREAK HISTORY</span>
+            <div id="streak-history" class="streak-history"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="level-training-grid" aria-label="Training paths by experience level">
+        <article class="level-column" data-level="beginner">
+          <div class="level-header beginner">
+            <span class="level-chip">Beginner</span>
+            <h3>Foundation</h3>
+          </div>
+          <div id="beginner-list" class="level-course-list"></div>
+        </article>
+
+        <article class="level-column" data-level="intermediate">
+          <div class="level-header intermediate">
+            <span class="level-chip">Intermediate</span>
+            <h3>Investigation</h3>
+          </div>
+          <div id="intermediate-list" class="level-course-list"></div>
+        </article>
+
+        <article class="level-column" data-level="advanced">
+          <div class="level-header advanced">
+            <span class="level-chip">Advanced</span>
+            <h3>Expert workflow</h3>
+          </div>
+          <div id="advanced-list" class="level-course-list"></div>
+        </article>
       </section>
     </main>
 
@@ -78,10 +170,230 @@
         <a href="{{ url_for('index') }}">Mission</a>
         <a href="{{ url_for('courses_page') }}">Training</a>
         <a href="{{ url_for('index') }}">Evidence</a>
-        <a href="#">Privacy</a>
+        <a href="{{ url_for('index') }}">Privacy</a>
       </div>
       <div class="footer-copy">© 2026 CyberVault Evidence Lab</div>
     </footer>
   </div>
+
+  <script>
+    const levelOrder = ['beginner', 'intermediate', 'advanced'];
+    const state = {
+      goal: 'forensic investigation',
+      level: 'beginner',
+      learner: 'Student'
+    };
+
+    function renderCourseCard(course) {
+      const materials = (course.materials || []).map((item) => `<li>${item}</li>`).join('');
+      const progress = Math.max(0, Math.min(100, Number(course.progress || 0)));
+      const isComplete = Boolean(course.complete) || progress >= 100;
+      return `
+        <article class="mini-course-card ${isComplete ? 'completed' : ''}">
+          <div class="mini-card-head">
+            <span class="mini-level">${(course.level || 'beginner').toUpperCase()}</span>
+            <span class="mini-progress">${progress}%</span>
+          </div>
+          <h4>${course.title}</h4>
+          <p>${course.description}</p>
+          <div class="mini-meta">
+            <span>${course.category}</span>
+            <span>${course.duration}</span>
+          </div>
+          <div class="mini-progress-bar">
+            <span style="width: ${progress}%"></span>
+          </div>
+          <ul class="mini-materials">${materials}</ul>
+          <button class="mini-course-button" data-course-id="${course.id}" ${isComplete ? 'disabled' : ''}>
+            ${isComplete ? 'Completed' : 'Mark complete'}
+          </button>
+        </article>
+      `;
+    }
+
+    function renderCoach(data) {
+      const instructions = document.getElementById('ai-instructions');
+      const streakCount = document.getElementById('daily-streak-count');
+      const streakMessage = document.getElementById('daily-streak-message');
+      const averageProgress = document.getElementById('average-progress');
+      const focus = document.getElementById('current-focus');
+      const learnerName = document.getElementById('learner-name');
+      const currentLevel = document.getElementById('current-level');
+      const nextStep = document.getElementById('next-step');
+      const challengeContainer = document.getElementById('daily-challenge');
+      const badgeList = document.getElementById('badge-list');
+
+      instructions.innerHTML = (data.instructions || []).map((item) => `<li>${item}</li>`).join('');
+      streakCount.textContent = `${data.daily_streak?.days || 0} days`;
+      streakMessage.textContent = data.daily_streak?.message || 'No streak yet.';
+      averageProgress.textContent = `${data.progress_summary?.average_progress || 0}%`;
+      focus.textContent = data.progress_summary?.focus || 'Forensic fundamentals';
+      learnerName.textContent = data.learner || 'Student';
+      currentLevel.textContent = (data.level || 'beginner').charAt(0).toUpperCase() + (data.level || 'beginner').slice(1);
+      nextStep.textContent = data.progress_summary?.next_step || 'Review the workflow and update progress.';
+
+      const challenge = data.daily_challenge || {
+        title: 'Evidence Basics Sprint',
+        description: 'Review your current case notes and finish one evidence summary.',
+        goal: 'Complete one short forensic task.'
+      };
+      challengeContainer.innerHTML = `
+        <h4>${challenge.title}</h4>
+        <p>${challenge.description}</p>
+        <strong>Goal:</strong>
+        <p>${challenge.goal}</p>
+      `;
+
+      badgeList.innerHTML = (data.badges || []).map((badge) => `
+        <span class="badge" title="${badge.description || badge.name}">${badge.name}</span>
+      `).join('');
+
+      levelOrder.forEach((levelKey) => {
+        const container = document.getElementById(`${levelKey}-list`);
+        if (!container) return;
+
+        const courses = (data.recommendations || []).filter((course) => (course.level || 'beginner') === levelKey);
+        container.innerHTML = courses.length ? courses.map(renderCourseCard).join('') : `
+          <div class="empty-state">No ${levelKey} path available yet. Try another level.</div>
+        `;
+      });
+
+      document.querySelectorAll('.level-toggle').forEach((button) => {
+        button.classList.toggle('active', (button.dataset.level || 'beginner') === (data.level || 'beginner'));
+      });
+
+      document.querySelectorAll('.mini-course-button').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const courseId = button.dataset.courseId;
+          if (!courseId) return;
+
+          button.disabled = true;
+          button.textContent = 'Updating...';
+
+          try {
+            const response = await fetch(`/api/course-progress/${courseId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ progress: 100, learner: state.learner })
+            });
+
+            if (!response.ok) throw new Error('Progress update failed');
+            await fetchPlan(state.level);
+          } catch (error) {
+            button.disabled = false;
+            button.textContent = 'Retry';
+          }
+        });
+      });
+    }
+
+    function renderStreakHistory(history) {
+      const container = document.getElementById('streak-history');
+      if (!container) return;
+
+      if (!history || history.length === 0) {
+        container.innerHTML = '<div class="empty-state">No recent streak activity yet.</div>';
+        return;
+      }
+
+      container.innerHTML = history.map((entry) => `
+        <div class="streak-day">
+          <strong>${new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short' })}</strong>
+          ${entry.progress}%
+        </div>
+      `).join('');
+    }
+
+    async function fetchWalkthrough() {
+      const response = await fetch('/api/site-walkthrough', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audience: 'new learner', goal: 'intro' })
+      });
+      const data = await response.json();
+      const overview = document.getElementById('walkthrough-overview');
+      const steps = document.getElementById('walkthrough-steps');
+
+      overview.textContent = data.overview || 'CyberVault is a guided forensic learning environment.';
+      steps.innerHTML = (data.steps || []).map((step, index) => `
+        <li>
+          <strong>${index + 1}. ${step.title}</strong>
+          <span>${step.description}</span>
+        </li>
+      `).join('');
+    }
+
+    async function fetchPlan(level = 'beginner') {
+      state.level = level;
+      const response = await fetch('/api/ai-course-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          goal: state.goal,
+          level,
+          learner: state.learner
+        })
+      });
+      const data = await response.json();
+      renderCoach(data);
+      renderStreakHistory(data.daily_streak ? [] : []);
+    }
+
+    async function saveProfile(event) {
+      event.preventDefault();
+      const learnerNameInput = document.getElementById('learner-name-input');
+      const levelSelect = document.getElementById('learner-level-select');
+      state.learner = learnerNameInput.value.trim() || 'Student';
+      state.level = levelSelect.value || 'beginner';
+
+      const response = await fetch('/api/learner-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          learner: state.learner,
+          level: state.level
+        })
+      });
+
+      const data = await response.json();
+      renderCoach({
+        ...data,
+        instructions: [
+          `Begin with the ${state.level} forensic fundamentals and establish a clear chain of custody.`,
+          'Use evidence sources to validate timestamps, access events, and file movements before making conclusions.',
+          'Document findings in a clear narrative so the final report is defensible and easy to review.'
+        ],
+        recommendations: (await (await fetch('/api/ai-course-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goal: state.goal, level: state.level, learner: state.learner })
+        })).json()).recommendations || []
+      });
+      renderStreakHistory(data.streak_history || []);
+      fetchPlan(state.level);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const learnerNameInput = document.getElementById('learner-name-input');
+      const levelSelect = document.getElementById('learner-level-select');
+      const profileForm = document.getElementById('learner-profile-form');
+
+      levelSelect.value = 'beginner';
+      learnerNameInput.value = state.learner;
+
+      profileForm.addEventListener('submit', saveProfile);
+
+      document.querySelectorAll('.level-toggle').forEach((button) => {
+        button.addEventListener('click', () => {
+          const level = button.dataset.level || 'beginner';
+          levelSelect.value = level;
+          fetchPlan(level);
+        });
+      });
+
+      fetchPlan('beginner');
+      fetchWalkthrough();
+    });
+  </script>
 </body>
 </html>
