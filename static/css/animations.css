@@ -1,0 +1,466 @@
+/* ═══════════════════════════════════════════════════════════════
+   CyberVault — Animation System
+   ═══════════════════════════════════════════════════════════════
+   Sections:
+   1.  Core keyframes
+   2.  Glitch text effect
+   3.  Neon glow pulse
+   4.  3D tilt card
+   5.  Magnetic button
+   6.  Ripple click effect
+   7.  Radar / scanner
+   8.  Noise canvas overlay
+   9.  Stagger fade-in children
+   10. Progress bar animated fill
+   11. Floating badge
+   12. Shimmer skeleton
+   13. Terminal text cursor
+   14. Evidence marker burst
+   15. Section entrance variants
+   16. Page transition overlay
+   17. Scroll progress bar
+   18. Spotlight hover
+   19. Stat number odometer
+   20. Chat bubble entrance
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════ 1. CORE KEYFRAMES ══ */
+
+@keyframes cv-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes cv-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes cv-slide-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes cv-slide-down {
+  from { opacity: 0; transform: translateY(-30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes cv-slide-left {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes cv-slide-right {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes cv-scale-in {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes cv-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.14); }
+  70%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+@keyframes cv-shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+@keyframes cv-float {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-12px); }
+}
+@keyframes cv-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes cv-ping {
+  0%   { transform: scale(1);   opacity: .8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes cv-pulse-border {
+  0%,100% { box-shadow: 0 0 0 0   rgba(74,158,255,.5); }
+  50%     { box-shadow: 0 0 0 10px rgba(74,158,255,0); }
+}
+
+/* ═══════════════════════════════════════ 2. GLITCH TEXT ══ */
+
+.cv-glitch {
+  position: relative;
+  display: inline-block;
+}
+.cv-glitch::before,
+.cv-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  overflow: hidden;
+  clip-path: inset(0 0 100% 0);
+}
+.cv-glitch::before {
+  left: 2px;
+  color: #ff3b6e;
+  animation: glitch-top 3.5s steps(1) infinite;
+}
+.cv-glitch::after {
+  left: -2px;
+  color: #4a9eff;
+  animation: glitch-bot 3.5s steps(1) infinite;
+}
+@keyframes glitch-top {
+  0%,90%,100% { clip-path: inset(0 0 100% 0); transform: translate(0); }
+  91%  { clip-path: inset(0 0 75%  0); transform: translate(-2px, -1px); }
+  92%  { clip-path: inset(20% 0 55% 0); transform: translate(2px,  1px); }
+  93%  { clip-path: inset(40% 0 30% 0); transform: translate(-1px, 2px); }
+  94%  { clip-path: inset(60% 0 10% 0); transform: translate(1px, -1px); }
+  95%  { clip-path: inset(0 0 100% 0); transform: translate(0); }
+}
+@keyframes glitch-bot {
+  0%,87%,100% { clip-path: inset(100% 0 0 0); transform: translate(0); }
+  88%  { clip-path: inset(80% 0 0  0); transform: translate(3px,  1px); }
+  89%  { clip-path: inset(60% 0 20% 0); transform: translate(-2px,-1px); }
+  90%  { clip-path: inset(40% 0 45% 0); transform: translate(2px,  2px); }
+  91%  { clip-path: inset(100% 0 0  0); transform: translate(0); }
+}
+
+/* Triggered glitch */
+.cv-glitch.glitching::before { animation: glitch-top .4s steps(1) forwards; }
+.cv-glitch.glitching::after  { animation: glitch-bot .4s steps(1) forwards; }
+
+/* ═══════════════════════════════════════ 3. NEON GLOW ══ */
+
+.neon-blue {
+  animation: neon-b 2.5s ease-in-out infinite alternate;
+}
+.neon-green {
+  animation: neon-g 2.5s ease-in-out infinite alternate;
+}
+@keyframes neon-b {
+  from { text-shadow: 0 0 4px #fff, 0 0 12px #4a9eff, 0 0 24px #4a9eff; }
+  to   { text-shadow: 0 0 8px #fff, 0 0 24px #4a9eff, 0 0 50px #4a9eff, 0 0 80px #4a9eff; }
+}
+@keyframes neon-g {
+  from { text-shadow: 0 0 4px #fff, 0 0 12px #2ecc71, 0 0 24px #2ecc71; }
+  to   { text-shadow: 0 0 8px #fff, 0 0 24px #2ecc71, 0 0 50px #2ecc71, 0 0 80px #2ecc71; }
+}
+
+/* ═══════════════════════════════════════ 4. 3D TILT CARD ══ */
+
+.cv-tilt {
+  transform-style: preserve-3d;
+  transition: transform .08s linear, box-shadow .3s ease;
+  will-change: transform;
+}
+.cv-tilt:hover {
+  box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 30px rgba(74,158,255,.2);
+}
+.cv-tilt-inner {
+  transform: translateZ(20px);
+  transition: transform .08s linear;
+}
+
+/* ═══════════════════════════════════════ 5. MAGNETIC BUTTON ══ */
+
+.cv-magnetic {
+  transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s;
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════ 6. RIPPLE ══ */
+
+.cv-ripple-host {
+  position: relative;
+  overflow: hidden;
+}
+.cv-ripple-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(74,158,255,.28);
+  transform: scale(0);
+  animation: ripple-expand .6s linear forwards;
+  pointer-events: none;
+}
+@keyframes ripple-expand {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════ 7. RADAR SCANNER ══ */
+
+.cv-radar {
+  position: relative;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(74,158,255,.3);
+  overflow: hidden;
+}
+.cv-radar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-radial-gradient(circle, transparent 0px, transparent 22px,
+      rgba(74,158,255,.07) 23px, transparent 24px),
+    repeating-linear-gradient(0deg, transparent, transparent 22px,
+      rgba(74,158,255,.07) 23px, transparent 24px),
+    repeating-linear-gradient(90deg, transparent, transparent 22px,
+      rgba(74,158,255,.07) 23px, transparent 24px);
+}
+.cv-radar-sweep {
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(74,158,255,.0) 200deg,
+    rgba(74,158,255,.25) 280deg,
+    rgba(74,158,255,.55) 359deg,
+    transparent 360deg
+  );
+  border-radius: 50%;
+  animation: radar-spin 2.4s linear infinite;
+  transform-origin: center;
+}
+.cv-radar-dot {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #4a9eff;
+  box-shadow: 0 0 6px #4a9eff;
+  animation: radar-blink 2.4s ease-in-out infinite;
+}
+@keyframes radar-spin  { to { transform: rotate(360deg); } }
+@keyframes radar-blink { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
+
+/* ═══════════════════════════════════════ 8. NOISE CANVAS ══ */
+
+#cv-noise-canvas {
+  position: fixed; inset: 0;
+  z-index: 7999;
+  pointer-events: none;
+  opacity: .028;
+  will-change: opacity;
+}
+
+/* ═══════════════════════════════════════ 9. STAGGER CHILDREN ══ */
+
+.cv-stagger > * {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity .55s ease, transform .55s ease;
+}
+.cv-stagger.stagger-visible > *:nth-child(1)  { transition-delay: .04s; }
+.cv-stagger.stagger-visible > *:nth-child(2)  { transition-delay: .10s; }
+.cv-stagger.stagger-visible > *:nth-child(3)  { transition-delay: .16s; }
+.cv-stagger.stagger-visible > *:nth-child(4)  { transition-delay: .22s; }
+.cv-stagger.stagger-visible > *:nth-child(5)  { transition-delay: .28s; }
+.cv-stagger.stagger-visible > *:nth-child(6)  { transition-delay: .34s; }
+.cv-stagger.stagger-visible > *:nth-child(7)  { transition-delay: .40s; }
+.cv-stagger.stagger-visible > *:nth-child(8)  { transition-delay: .46s; }
+.cv-stagger.stagger-visible > * {
+  opacity: 1; transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════ 10. ANIMATED PROGRESS BAR ══ */
+
+.cv-progress-bar {
+  height: 3px;
+  background: var(--bg5, #1c2236);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cv-progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #4a9eff, #7dbfff);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(74,158,255,.6);
+  transition: width 1.4s cubic-bezier(.4,0,.2,1);
+}
+
+/* ═══════════════════════════════════════ 11. FLOATING BADGE ══ */
+
+.cv-float-badge {
+  animation: cv-float 3.5s ease-in-out infinite;
+}
+.cv-float-badge:nth-child(2) { animation-delay: .6s; }
+.cv-float-badge:nth-child(3) { animation-delay: 1.2s; }
+.cv-float-badge:nth-child(4) { animation-delay: 1.8s; }
+
+/* ═══════════════════════════════════════ 12. SHIMMER SKELETON ══ */
+
+.cv-shimmer {
+  background: linear-gradient(90deg,
+    var(--bg3, #10141f) 25%,
+    var(--bg4, #161c2c) 50%,
+    var(--bg3, #10141f) 75%
+  );
+  background-size: 400% 100%;
+  animation: shimmer-slide 1.8s ease-in-out infinite;
+  border-radius: 4px;
+}
+@keyframes shimmer-slide {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* ═══════════════════════════════════════ 13. TERMINAL CURSOR ══ */
+
+.cv-terminal-cursor::after {
+  content: '▋';
+  color: #4a9eff;
+  animation: term-blink .9s step-end infinite;
+  margin-left: 2px;
+  font-weight: 400;
+}
+@keyframes term-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ═══════════════════════════════════════ 14. EVIDENCE MARKER BURST ══ */
+
+.ev-burst {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+}
+.ev-burst span {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--yellow, #f1c40f);
+  transform-origin: 0 0;
+  animation: burst-out .55s ease forwards;
+}
+@keyframes burst-out {
+  to { transform: rotate(var(--angle)) translateX(28px) scale(0); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════ 15. SECTION ENTRANCE VARIANTS ══ */
+
+/* Blur-in */
+.anim-blur-in {
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(16px);
+  transition: opacity .7s ease, filter .7s ease, transform .7s ease;
+}
+.anim-blur-in.visible {
+  opacity: 1; filter: blur(0); transform: translateY(0);
+}
+
+/* Zoom-from-center */
+.anim-zoom {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity .65s ease, transform .65s cubic-bezier(.34,1.56,.64,1);
+}
+.anim-zoom.visible { opacity: 1; transform: scale(1); }
+
+/* Flip-in (X axis) */
+.anim-flip {
+  opacity: 0;
+  transform: rotateX(-20deg) translateY(20px);
+  transition: opacity .65s ease, transform .65s cubic-bezier(.4,0,.2,1);
+  transform-origin: top center;
+  perspective: 800px;
+}
+.anim-flip.visible { opacity: 1; transform: rotateX(0) translateY(0); }
+
+/* ═══════════════════════════════════════ 16. PAGE TRANSITION OVERLAY ══ */
+
+#cv-page-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: #07090e;
+  pointer-events: none;
+  animation: overlay-out .9s cubic-bezier(.77,0,.18,1) forwards;
+}
+@keyframes overlay-out {
+  0%   { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 0 100% 0); }
+}
+
+/* ═══════════════════════════════════════ 17. SCROLL PROGRESS BAR ══ */
+
+#cv-scroll-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px; width: 0%;
+  background: linear-gradient(90deg, #4a9eff, #7dbfff, #2ecc71);
+  z-index: 1001;
+  box-shadow: 0 0 8px rgba(74,158,255,.8);
+  transition: width .1s linear;
+}
+
+/* ═══════════════════════════════════════ 18. SPOTLIGHT HOVER ══ */
+
+.cv-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+.cv-spotlight-beam {
+  position: absolute;
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(74,158,255,.12) 0%,
+    transparent 70%);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: opacity .3s;
+  opacity: 0;
+}
+.cv-spotlight:hover .cv-spotlight-beam { opacity: 1; }
+
+/* ═══════════════════════════════════════ 19. STAT ODOMETER ══ */
+
+.cv-odometer {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  transition: all .1s ease;
+}
+
+/* ═══════════════════════════════════════ 20. CHAT BUBBLE ENTRANCE ══ */
+
+.cw-msg, .aic-msg {
+  animation: bubble-in .28s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes bubble-in {
+  from { opacity: 0; transform: scale(.88) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+.cw-msg.user-msg, .aic-msg.user-msg {
+  animation: bubble-right .28s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes bubble-right {
+  from { opacity: 0; transform: scale(.88) translateX(12px); }
+  to   { opacity: 1; transform: scale(1)   translateX(0); }
+}
+
+/* ═══════════════════════════════════════ UTILITY CLASSES ══ */
+
+.anim-delay-1  { transition-delay: .06s  !important; animation-delay: .06s  !important; }
+.anim-delay-2  { transition-delay: .12s  !important; animation-delay: .12s  !important; }
+.anim-delay-3  { transition-delay: .18s  !important; animation-delay: .18s  !important; }
+.anim-delay-4  { transition-delay: .24s  !important; animation-delay: .24s  !important; }
+.anim-delay-5  { transition-delay: .30s  !important; animation-delay: .30s  !important; }
+.anim-delay-6  { transition-delay: .36s  !important; animation-delay: .36s  !important; }
+.anim-slow     { animation-duration: 2s   !important; transition-duration: 2s   !important; }
+.anim-fast     { animation-duration: .3s  !important; transition-duration: .3s  !important; }
+.anim-repeat   { animation-iteration-count: infinite !important; }
+.anim-pop      { animation: cv-pop .4s ease; }
+.anim-shake    { animation: cv-shake .4s ease; }
+.anim-float    { animation: cv-float 3s ease-in-out infinite; }
+.anim-spin     { animation: cv-spin 1.2s linear infinite; }
+.anim-ping     { animation: cv-ping 1s ease-out infinite; }
+.anim-pulse-border { animation: cv-pulse-border 2s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════ REDUCED MOTION OVERRIDE ══ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  #cv-noise-canvas, .cv-glitch::before, .cv-glitch::after { display: none; }
+}

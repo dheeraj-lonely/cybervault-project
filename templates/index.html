@@ -1,173 +1,76 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CyberVault · Evidence Lab</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
-</head>
-<body>
-  <div class="page-shell game-page">
-    <header class="site-header">
-      <a class="brand" href="{{ url_for('index') }}">
-        <span class="brand-mark">
-          <span class="brand-mark-inner"></span>
-        </span>
-        <span class="brand-wordmark">CYBERVAULT</span>
-      </a>
-
-      <nav class="main-nav" aria-label="Main navigation">
-        <a class="nav-link" href="#problem-statement">Mission</a>
-        <a class="nav-link" href="{{ url_for('game_page') }}">Cases</a>
-        <a class="nav-link" href="#problem-statement">Evidence</a>
-        <a class="nav-link" href="{{ url_for('courses_page') }}">Workflow</a>
-      </nav>
-
-      <a class="login-link" href="{{ url_for('game_page') }}">
-        <span class="login-icon">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2" />
-            <path d="M12 8h9" fill="none" stroke="currentColor" stroke-width="2" />
-            <path d="M17 3l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" />
-          </svg>
-        </span>
-        <span>Academy login</span>
-      </a>
-    </header>
-
-    <main class="landing-page">
-      <section class="hero-section">
-        <div class="hero-copy">
-          <span class="section-kicker">CYBERVAULT // DIGITAL FORENSICS EDUCATION</span>
-          <h1>Build practical forensic investigation skills in a safe, guided learning environment.</h1>
-          <p>
-            CyberVault helps students learn how digital evidence is collected, analyzed, and documented without exposing them to live systems,
-            private data, or unsafe forensic workflows. The platform focuses on understanding the process behind modern investigations.
-          </p>
-          <div class="hero-actions">
-            <a class="primary-button small-button" href="{{ url_for('game_page') }}">Enter the Game</a>
-            <a class="secondary-button small-button" href="{{ url_for('courses_page') }}">Explore Courses</a>
-            <a class="secondary-button small-button" href="#problem-statement">Learn More</a>
-          </div>
-        </div>
-
-        <div class="hero-panel">
-          <div class="hero-stat">
-            <span class="mini-label">Training Focus</span>
-            <strong>Evidence collection & analysis</strong>
-          </div>
-          <div class="hero-stat">
-            <span class="mini-label">Method</span>
-            <strong>Fictional case simulation</strong>
-          </div>
-          <div class="hero-stat">
-            <span class="mini-label">Safety</span>
-            <strong>No real devices or private data</strong>
-          </div>
-        </div>
-      </section>
-
-      <section id="problem-statement" class="info-grid">
-        <article class="info-card">
-          <span class="section-kicker">PROBLEM STATEMENT</span>
-          <h3>Digital forensics is difficult to teach without realistic practice.</h3>
-          <p>
-            Beginners often learn the theory of evidence handling, but they rarely get the chance to experience the real investigation process.
-            Complex tools, large data sets, strict procedures, and chain-of-custody rules make practical forensic learning difficult to deliver in a safe environment.
-          </p>
-        </article>
-
-        <article class="info-card">
-          <span class="section-kicker">OUR SOLUTION</span>
-          <h3>CyberVault creates a controlled forensic learning experience.</h3>
-          <p>
-            Students work with fictional case scenarios, simulated evidence, timestamps, messages, browser activity, and access records to reconstruct timelines,
-            identify patterns, and prepare investigation reports. The process is realistic, educational, and ethically safe.
-          </p>
-        </article>
-      </section>
-
-      <section class="stack-section" aria-label="Technology stack">
-        <div class="section-header-inline">
-          <span class="section-kicker">TECH STACK</span>
-          <h3>Built using the requested technology stack</h3>
-        </div>
-
-        <div class="stack-grid">
-          <div class="stack-card">
-            <span class="stack-label">Frontend</span>
-            <ul>
-              <li>HTML</li>
-              <li>CSS</li>
-              <li>JavaScript</li>
-              <li>Bootstrap</li>
-            </ul>
-          </div>
-
-          <div class="stack-card">
-            <span class="stack-label">Backend</span>
-            <ul>
-              <li>Python</li>
-              <li>Flask</li>
-            </ul>
-          </div>
-
-          <div class="stack-card">
-            <span class="stack-label">Database</span>
-            <ul>
-              <li>SQLite</li>
-              <li>SQLAlchemy</li>
-            </ul>
-          </div>
-
-          <div class="stack-card">
-            <span class="stack-label">Visualization & Reports</span>
-            <ul>
-              <li>JavaScript</li>
-              <li>Chart.js</li>
-              <li>Python reports</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section id="feature-section" class="feature-section">
-        <article class="feature-card">
-          <span class="mini-label">01</span>
-          <h4>Structured learning flow</h4>
-          <p>Students follow a disciplined investigation model from evidence review to final reporting.</p>
-        </article>
-
-        <article class="feature-card">
-          <span class="mini-label">02</span>
-          <h4>Evidence-based reasoning</h4>
-          <p>Comprehension is built through pattern recognition, timeline reconstruction, and analytical thinking.</p>
-        </article>
-
-        <article class="feature-card">
-          <span class="mini-label">03</span>
-          <h4>Safe educational platform</h4>
-          <p>All scenarios are simulated, fictional, and designed to teach without violating privacy or security boundaries.</p>
-        </article>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <div class="footer-brand">
-        <span class="brand-mark small">
-          <span class="brand-mark-inner"></span>
-        </span>
-        <span class="brand-wordmark">CYBERVAULT</span>
-      </div>
-      <div class="footer-links">
-        <a href="#problem-statement">Problem</a>
-        <a href="#feature-section">Stack</a>
-        <a href="{{ url_for('game_page') }}">Game</a>
-        <a href="{{ url_for('courses_page') }}">Courses</a>
-      </div>
-      <div class="footer-copy">© 2026 CyberVault</div>
-    </footer>
-  </div>
-</body>
-</html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CyberVault | Forensic Investigation Platform</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand-wrap">
+      <span class="brand-mark">CV</span>
+      <span class="brand-name">CYBERVAULT</span>
+    </div>
+    <nav class="main-nav">
+      <a href="#mission">Mission</a>
+      <a href="#features">Features</a>
+      <a href="{{ url_for('game_page') }}">Game</a>
+      <a href="{{ url_for('courses_page') }}">Courses</a>
+    </nav>
+    <a class="primary-btn" href="{{ url_for('game_page') }}">Enter the Lab</a>
+  </header>
+
+  <main class="landing-page">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">DIGITAL FORENSICS EDUCATION</p>
+        <h1>Build practical forensic investigation skills.</h1>
+        <p>CyberVault gives learners a safe, guided environment to explore evidence, learn investigation techniques, and understand chain-of-custody and case analysis.</p>
+        <div class="hero-actions">
+          <a class="primary-btn" href="{{ url_for('game_page') }}">Play Now</a>
+          <a class="secondary-btn" href="{{ url_for('courses_page') }}">Explore Courses</a>
+        </div>
+      </div>
+      <div class="hero-panel">
+        <div class="panel-tag">ACTIVE CASE</div>
+        <h2>CASE #047</h2>
+        <p>The Abandoned Warehouse</p>
+        <ul>
+          <li>Evidence board</li>
+          <li>Timeline reconstruction</li>
+          <li>Forensic AI coach</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="mission" class="info-section">
+      <h2>Mission</h2>
+      <p>CyberVault focuses on practical, evidence-led investigation skills. Students can review forensic concepts, interpret digital artifacts, and build case reasoning in a structured workflow.</p>
+    </section>
+
+    <section id="features" class="feature-grid">
+      <article class="feature-card">
+        <h3>Evidence Lab</h3>
+        <p>Collect and inspect artifacts from a case board with timeline and confidence scoring.</p>
+      </article>
+      <article class="feature-card">
+        <h3>AI Coach</h3>
+        <p>Ask forensic questions and get structured, evidence-based reasoning in plain language.</p>
+      </article>
+      <article class="feature-card">
+        <h3>Training Paths</h3>
+        <p>Choose from beginner, intermediate, and advanced forensic learning paths.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 CyberVault</span>
+    <div>
+      <a href="{{ url_for('game_page') }}">Game</a>
+      <a href="{{ url_for('courses_page') }}">Courses</a>
+    </div>
+  </footer>
+</body>
+</html>
