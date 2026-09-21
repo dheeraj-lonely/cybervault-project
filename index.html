@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CyberVault · Evidence Lab</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page-shell game-page">
+    <header class="site-header">
+      <a class="brand" href="#">
+        <span class="brand-mark">
+          <span class="brand-mark-inner"></span>
+        </span>
+        <span class="brand-wordmark">CYBERVAULT</span>
+      </a>
+
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link" href="#">Mission</a>
+        <a class="nav-link" href="#">Cases</a>
+        <a class="nav-link" href="#">Evidence</a>
+        <a class="nav-link" href="#">Workflow</a>
+      </nav>
+
+      <a class="login-link" href="#">
+        <span class="login-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2" />
+            <path d="M12 8h9" fill="none" stroke="currentColor" stroke-width="2" />
+            <path d="M17 3l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" />
+          </svg>
+        </span>
+        <span>Academy login</span>
+      </a>
+    </header>
+
+    <main class="game-dashboard">
+      <section class="dashboard-topbar">
+        <div class="dashboard-title-wrap">
+          <span class="section-kicker">CYBERVAULT // TRAINING</span>
+          <h1>Evidence Hunt</h1>
+        </div>
+        <div class="dashboard-actions">
+          <button class="icon-button" id="refresh-button">↻</button>
+          <button class="primary-button small-button" id="begin-investigation">Begin Investigation</button>
+        </div>
+      </section>
+
+      <section class="game-board">
+        <aside class="left-panel">
+          <div class="left-panel-title">Main Menu</div>
+          <div class="menu-list">
+            <a class="menu-link active" href="#">
+              <span class="menu-icon">✦</span>
+              <span>New Case</span>
+            </a>
+            <a class="menu-link" href="#">
+              <span class="menu-icon">▣</span>
+              <span>Case Files</span>
+            </a>
+            <a class="menu-link" href="#">
+              <span class="menu-icon">✎</span>
+              <span>Training</span>
+            </a>
+            <a class="menu-link" href="#">
+              <span class="menu-icon">⚙</span>
+              <span>Settings</span>
+            </a>
+          </div>
+          <a class="exit-button" href="#">Exit</a>
+        </aside>
+
+        <section class="case-panel">
+          <section class="case-brief" id="case-brief">
+            <div class="case-brief-top">
+              <span class="case-panel-label">Case #014 — The Missing Data</span>
+              <span class="case-status">Confidential</span>
+            </div>
+            <div class="case-split">
+              <div class="case-objective">
+                <span class="mini-label">Objective</span>
+                <span class="mini-copy">Establish what changed, who accessed it, and when it moved.</span>
+              </div>
+              <div class="case-meta-grid">
+                <div>
+                  <span class="mini-label">Evidence</span>
+                  <span class="mini-copy">03 items</span>
+                </div>
+                <div>
+                  <span class="mini-label">Difficulty</span>
+                  <span class="mini-copy">Medium</span>
+                </div>
+                <div>
+                  <span class="mini-label">Risk</span>
+                  <span class="mini-copy">Low</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="case-details">
+              <div class="detail-row">
+                <span class="detail-label">Location</span>
+                <span class="detail-value">Finance Office</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Access Window</span>
+                <span class="detail-value">12:00–14:00</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Investigator</span>
+                <span class="detail-value">Investigator_01</span>
+              </div>
+            </div>
+
+            <div class="case-progress">
+              <div class="progress-row">
+                <span class="progress-text">Progress</span>
+                <span class="progress-number" id="progress-value">20%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar-fill" id="case-progress-bar"></div>
+              </div>
+            </div>
+
+            <div class="case-actions">
+              <button class="primary-button small-button" id="analyze-button">Analyze Signals</button>
+              <button class="secondary-button small-button" id="request-button">Request Artifact</button>
+            </div>
+          </section>
+
+          <section class="evidence-console">
+            <div class="console-head">
+              <span class="console-title">Evidence Console</span>
+              <span class="console-count"><span id="evidence-count">3</span> / 5</span>
+            </div>
+            <div class="evidence-list" id="evidence-list">
+              <div class="evidence-line selected" data-evidence="USB-STORAGE">
+                <span class="evidence-id">01</span>
+                <span class="evidence-name">USB Drive</span>
+                <span class="evidence-category">Digital Device</span>
+              </div>
+              <div class="evidence-line" data-evidence="MSG-045">
+                <span class="evidence-id">02</span>
+                <span class="evidence-name">Chat Log</span>
+                <span class="evidence-category">Communication</span>
+              </div>
+              <div class="evidence-line" data-evidence="TRACE-118">
+                <span class="evidence-id">03</span>
+                <span class="evidence-name">Browser History</span>
+                <span class="evidence-category">Browser</span>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="scene-panel">
+          <div class="scene-top">
+            <span class="scene-title">Scene Investigation</span>
+            <span class="scene-controls">
+              <span class="control-icon">✲</span>
+            </span>
+          </div>
+
+          <div class="scene-image">
+            <div class="scene-grid">
+              <span class="scene-cell cell-a"></span>
+              <span class="scene-cell cell-b"></span>
+              <span class="scene-cell cell-c"></span>
+              <span class="scene-cell cell-d"></span>
+            </div>
+            <div class="scene-scan">
+              <span class="scan-ring one"></span>
+              <span class="scan-ring two"></span>
+              <span class="scan-core">01</span>
+            </div>
+          </div>
+
+          <div class="scene-status">
+            <div class="scene-status-row">
+              <span class="scene-label">Case</span>
+              <span class="scene-value">CV-014</span>
+            </div>
+            <div class="scene-status-row">
+              <span class="scene-label">Evidence</span>
+              <span class="scene-value" id="evidence-type">USB Drive</span>
+            </div>
+            <div class="scene-status-row">
+              <span class="scene-label">Time</span>
+              <span class="scene-value" id="evidence-time">12:05:22</span>
+            </div>
+            <div class="scene-status-row">
+              <span class="scene-label">Confidence</span>
+              <span class="scene-value" id="confidence-value">82%</span>
+            </div>
+          </div>
+
+          <div class="scene-report">
+            <span class="scene-report-title">Observation</span>
+            <p id="evidence-observation">
+              An unlabeled flash drive was found near the finance desk.
+            </p>
+            <span class="scene-report-title">Source</span>
+            <p id="evidence-source">Investigator_01</p>
+            <span class="scene-report-title">Category</span>
+            <p id="evidence-category">Digital Device</p>
+          </div>
+
+          <div class="scene-actions">
+            <button class="secondary-button small-button">View Inventory</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="lower-dashboard">
+        <section class="timeline-panel">
+          <div class="panel-title">Timeline Reconstruction</div>
+          <div class="timeline">
+            <span class="timeline-event event-1">09:00</span>
+            <span class="timeline-event event-2">10:00</span>
+            <span class="timeline-event event-3">11:00</span>
+            <span class="timeline-event event-4">12:00</span>
+            <span class="timeline-event event-5">13:00</span>
+          </div>
+          <div class="timeline-legend">
+            <span><i class="legend-dot dot-one"></i>USB</span>
+            <span><i class="legend-dot dot-two"></i>Files</span>
+            <span><i class="legend-dot dot-three"></i>Messages</span>
+          </div>
+        </section>
+
+        <section class="analysis-panel">
+          <div class="panel-title">Signal Analysis</div>
+          <div class="analysis-card">
+            <span class="analysis-label">Theory</span>
+            <span class="analysis-result" id="analysis-result">Signal correlation pending.</span>
+          </div>
+          <div class="analysis-card">
+            <span class="analysis-label">Artifact Request</span>
+            <span class="analysis-result" id="artifact-request">No request active.</span>
+          </div>
+        </section>
+
+        <section class="report-panel">
+          <div class="panel-title">Final Report</div>
+          <div class="report-form">
+            <textarea id="report-input" placeholder="Enter defensible evidence narrative..."></textarea>
+            <button class="primary-button small-button report-button" id="submit-report">Submit Report</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="brand-mark small">
+          <span class="brand-mark-inner"></span>
+        </span>
+        <span class="brand-wordmark">CYBERVAULT</span>
+      </div>
+      <div class="footer-links">
+        <a href="#">Mission</a>
+        <a href="#">Cases</a>
+        <a href="#">Evidence</a>
+        <a href="#">Privacy</a>
+      </div>
+      <div class="footer-copy">© 2026 CyberVault Evidence Lab</div>
+    </footer>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CyberVault · Forensic Courses</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+</head>
+<body>
+  <div class="page-shell game-page">
+    <header class="site-header">
+      <a class="brand" href="{{ url_for('index') }}">
+        <span class="brand-mark"><span class="brand-mark-inner"></span></span>
+        <span class="brand-wordmark">CYBERVAULT</span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link" href="{{ url_for('index') }}">Mission</a>
+        <a class="nav-link" href="{{ url_for('index') }}">Cases</a>
+        <a class="nav-link" href="{{ url_for('index') }}">Evidence</a>
+        <a class="nav-link active" href="{{ url_for('courses_page') }}">Training</a>
+      </nav>
+      <a class="login-link" href="#">
+        <span class="login-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2" />
+            <path d="M12 8h9" fill="none" stroke="currentColor" stroke-width="2" />
+            <path d="M17 3l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" />
+          </svg>
+        </span>
+        <span>Academy login</span>
+      </a>
+    </header>
+
+    <main class="game-dashboard">
+      <section class="dashboard-topbar">
+        <div class="dashboard-title-wrap">
+          <span class="section-kicker">CYBERVAULT // TRAINING</span>
+          <h1>Forensic Training Courses</h1>
+        </div>
+        <div class="dashboard-actions">
+          <a class="primary-button small-button" href="{{ url_for('index') }}">Back to Lab</a>
+        </div>
+      </section>
+
+      <section class="course-grid">
+        {% for course in courses %}
+          <article class="course-card">
+            <div class="course-card-head">
+              <span class="course-category">{{ course.category }}</span>
+              <span class="course-level">{{ course.level|upper }}</span>
+            </div>
+            <h3>{{ course.title }}</h3>
+            <p>{{ course.description }}</p>
+            <div class="course-meta">
+              <span><b>Duration:</b> {{ course.duration }}</span>
+              <span><b>Progress:</b> {{ course.progress }}%</span>
+            </div>
+            <div class="course-materials">
+              <span class="mini-label">Required materials</span>
+              <ul>
+                {% for material in course.materials.split('|') %}
+                  <li>{{ material.strip() }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </article>
+        {% endfor %}
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="brand-mark small"><span class="brand-mark-inner"></span></span>
+        <span class="brand-wordmark">CYBERVAULT</span>
+      </div>
+      <div class="footer-links">
+        <a href="{{ url_for('index') }}">Mission</a>
+        <a href="{{ url_for('courses_page') }}">Training</a>
+        <a href="{{ url_for('index') }}">Evidence</a>
+        <a href="#">Privacy</a>
+      </div>
+      <div class="footer-copy">© 2026 CyberVault Evidence Lab</div>
+    </footer>
+  </div>
+</body>
+</html>
