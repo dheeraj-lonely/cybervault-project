@@ -1,0 +1,332 @@
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>CYBERVAULT: Bio-Cybernetic Horror Investigation</title>  
+    <!-- Tailwind CSS -->  
+    <script src="https://cdn.tailwindcss.com"></script>  
+    <!-- Font Awesome Icons -->  
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">  
+    <!-- Google Fonts -->  
+    <link rel="preconnect" href="https://fonts.googleapis.com">  
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>  
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">  
+    <!-- Three.js -->  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>  
+  
+    <style>  
+        :root {  
+            --font-mono: 'Share Tech Mono', monospace;  
+            --font-title: 'Orbitron', sans-serif;  
+            --color-crimson: #ff0033;  
+            --color-cyan: #00f3ff;  
+            --color-bg-dark: #050508;  
+        }  
+  
+        body {  
+            background-color: var(--color-bg-dark);  
+            color: #d1d5db;  
+            font-family: var(--font-mono);  
+            overflow-x: hidden;  
+            margin: 0;  
+            padding: 0;  
+            user-select: none;  
+        }  
+  
+        /* CRT Scanline Overlay */  
+        .crt-overlay {  
+            position: fixed;  
+            top: 0; left: 0; width: 100vw; height: 100vh;  
+            pointer-events: none;  
+            z-index: 99;  
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),  
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));  
+            background-size: 100% 3px, 6px 100%;  
+            opacity: 0.85;  
+        }  
+  
+        .vignette {  
+            position: fixed;  
+            top: 0; left: 0; width: 100vw; height: 100vh;  
+            pointer-events: none;  
+            z-index: 98;  
+            background: radial-gradient(circle, transparent 55%, rgba(2, 0, 5, 0.95) 100%);  
+        }  
+  
+        /* Glitch Animation */  
+        @keyframes glitch {  
+            0% { transform: translate(0) }  
+            20% { transform: translate(-2px, 2px) }  
+            40% { transform: translate(-2px, -2px) }  
+            60% { transform: translate(2px, 2px) }  
+            80% { transform: translate(2px, -2px) }  
+            100% { transform: translate(0) }  
+        }  
+  
+        .glitch-active {  
+            animation: glitch 0.15s infinite;  
+        }  
+  
+        /* Custom Scrollbar */  
+        ::-webkit-scrollbar {  
+            width: 4px;  
+        }  
+        ::-webkit-scrollbar-track {  
+            background: rgba(10, 10, 15, 0.8);  
+        }  
+        ::-webkit-scrollbar-thumb {  
+            background: var(--color-crimson);  
+            border-radius: 2px;  
+        }  
+  
+        /* Glowing Border Glassmorphism Card */  
+        .glass-panel {  
+            background: rgba(10, 12, 18, 0.82);  
+            backdrop-filter: blur(8px);  
+            border: 1px solid rgba(255, 0, 51, 0.25);  
+            box-shadow: 0 0 15px rgba(255, 0, 51, 0.08);  
+        }  
+  
+        .glass-panel-cyan {  
+            background: rgba(10, 12, 18, 0.82);  
+            backdrop-filter: blur(8px);  
+            border: 1px solid rgba(0, 243, 255, 0.25);  
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.08);  
+        }  
+  
+        /* Pulsing Text */  
+        .pulse-crimson {  
+            animation: pulse-red 2s infinite;  
+        }  
+        @keyframes pulse-red {  
+            0%, 100% { text-shadow: 0 0 8px rgba(255, 0, 51, 0.8); color: #ff0033; }  
+            50% { text-shadow: 0 0 20px rgba(255, 0, 51, 1); color: #ff6688; }  
+        }  
+  
+        /* Custom Range Slider */  
+        input[type=range] {  
+            accent-color: #ff0033;  
+        }  
+    </style>  
+</head>  
+<body class="h-screen w-screen flex flex-col overflow-hidden text-sm">  
+  
+    <!-- Screen Overlays -->  
+    <div class="crt-overlay"></div>  
+    <div class="vignette"></div>  
+    <div id="glitch-overlay" class="fixed inset-0 bg-red-900/10 pointer-events-none z-50 hidden"></div>  
+  
+    <!-- Header / Status Bar -->  
+    <header class="h-14 border-b border-red-900/40 bg-black/80 px-4 flex items-center justify-between z-10 shrink-0">  
+        <div class="flex items-center space-x-3">  
+            <i class="fa-solid fa-biohazard text-red-600 text-xl animate-pulse"></i>  
+            <div>  
+                <h1 class="font-[Orbitron] text-lg tracking-widest text-red-500 font-black flex items-center gap-2">  
+                    CYBERVAULT <span class="text-xs bg-red-950 text-red-400 border border-red-700/50 px-2 py-0.5 rounded">BIO-HORROR SITE-09</span>  
+                </h1>  
+            </div>  
+        </div>  
+  
+        <!-- System Diagnostic Counters -->  
+        <div class="hidden md:flex items-center space-x-6 text-xs">  
+            <div class="flex items-center space-x-2">  
+                <span class="text-gray-500">SYSTEM STREAK:</span>  
+                <span id="streak-counter" class="text-cyan-400 font-bold text-base">0x</span>  
+            </div>  
+            <div class="flex items-center space-x-2">  
+                <span class="text-gray-500">HEART RATE:</span>  
+                <span id="bpm-display" class="pulse-crimson font-bold text-base">72 BPM</span>  
+            </div>  
+            <div class="flex items-center space-x-2">  
+                <span class="text-gray-500">CORRUPTION:</span>  
+                <div class="w-24 bg-gray-900 h-2 rounded overflow-hidden border border-red-900/50">  
+                    <div id="corruption-bar" class="bg-red-600 h-full w-[20%] transition-all duration-300"></div>  
+                </div>  
+            </div>  
+        </div>  
+  
+        <!-- Audio & Settings Controls -->  
+        <div class="flex items-center space-x-3">  
+            <button id="toggle-audio" class="px-3 py-1 bg-red-950/60 border border-red-700/50 text-red-300 rounded hover:bg-red-900/50 transition flex items-center gap-2">  
+                <i class="fa-solid fa-volume-xmark" id="audio-icon"></i>  
+                <span class="hidden sm:inline text-xs">BIO-AUDIO</span>  
+            </button>  
+            <button id="api-modal-btn" class="px-3 py-1 bg-gray-900 border border-gray-700 text-gray-300 rounded hover:bg-gray-800 transition text-xs">  
+                <i class="fa-solid fa-key text-yellow-500"></i> AI KEY  
+            </button>
+            <button onclick="window.location.href='/'" class="px-3 py-1 bg-blue-900 border border-blue-700 text-blue-300 rounded hover:bg-blue-800 transition text-xs">
+                <i class="fa-solid fa-home"></i> HOME
+            </button>
+        </div>  
+    </header>  
+  
+    <!-- Main Dashboard Grid Container -->  
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 p-2 overflow-hidden z-10">  
+  
+        <!-- Left Column: Level Selector & Evidence Dossier (3 cols) -->  
+        <section class="lg:col-span-3 flex flex-col gap-2 overflow-hidden">  
+            <!-- Level Selector -->  
+            <div class="glass-panel rounded-lg p-3">  
+                <h2 class="text-xs font-bold text-red-500 uppercase tracking-widest mb-2 flex items-center justify-between">  
+                    <span><i class="fa-solid fa-layer-group mr-1"></i> Vault Sector</span>  
+                    <span id="active-level-tag" class="text-cyan-400">LEVEL 1</span>  
+                </h2>  
+                <div class="grid grid-cols-3 gap-2">  
+                    <button onclick="switchLevel(1)" id="lvl-btn-1" class="p-2 border border-red-600/80 bg-red-950/40 text-red-300 rounded text-xs font-bold hover:bg-red-900/40 text-center">  
+                        S1: Crime Scene  
+                    </button>  
+                    <button onclick="switchLevel(2)" id="lvl-btn-2" class="p-2 border border-gray-800 bg-gray-900/40 text-gray-500 rounded text-xs font-bold hover:bg-gray-800/40 text-center">  
+                        S2: Bio-Wing  
+                    </button>  
+                    <button onclick="switchLevel(3)" id="lvl-btn-3" class="p-2 border border-gray-800 bg-gray-900/40 text-gray-500 rounded text-xs font-bold hover:bg-gray-800/40 text-center">  
+                        S3: AI Core  
+                    </button>  
+                </div>  
+            </div>  
+  
+            <!-- Evidence Dossier -->  
+            <div class="glass-panel rounded-lg p-3 flex-1 flex flex-col overflow-hidden">  
+                <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-2 flex items-center justify-between">  
+                    <span><i class="fa-solid fa-folder-open mr-1"></i> Evidence Dossier</span>  
+                    <span id="evidence-count" class="text-gray-400">0 / 5 Collected</span>  
+                </h2>  
+  
+                <div id="evidence-list" class="flex-1 overflow-y-auto space-y-2 pr-1">  
+                    <p class="text-gray-600 text-xs italic p-2 text-center">Click on 3D objects in the crime scene to extract forensic evidence...</p>  
+                </div>  
+            </div>  
+        </section>  
+  
+        <!-- Center Column: 3D Scene Viewport & Active Puzzle Area (6 cols) -->  
+        <section class="lg:col-span-6 flex flex-col gap-2 overflow-hidden relative">  
+  
+            <!-- 3D Canvas Canvas Container -->  
+            <div class="relative flex-1 bg-black rounded-lg border border-red-900/40 overflow-hidden shadow-2xl">  
+                <!-- 3D Canvas -->  
+                <canvas id="canvas3d" class="w-full h-full block cursor-crosshair"></canvas>  
+  
+                <!-- Floating Canvas Controls Overlay -->  
+                <div class="absolute top-3 left-3 pointer-events-none flex flex-col gap-1">  
+                    <div class="bg-black/70 border border-red-600/40 px-2 py-1 rounded text-[10px] text-red-400 tracking-wider">  
+                        <i class="fa-solid fa-eye mr-1 animate-pulse"></i> LIVE FEED // CAMERA SENSOR 09  
+                    </div>  
+                    <div id="target-label" class="bg-black/80 border border-cyan-500/40 px-2 py-1 rounded text-xs text-cyan-300 hidden">  
+                        TARGET: <span id="target-name">NONE</span>  
+                    </div>  
+                </div>  
+  
+                <!-- Guidance Overlay -->  
+                <div class="absolute bottom-3 left-3 right-3 pointer-events-none flex justify-between items-end">  
+                    <span class="text-[10px] text-gray-500 bg-black/60 px-2 py-1 rounded">CLICK OBJECTS TO INVESTIGATE</span>  
+                    <button id="inspect-btn" onclick="interactTarget()" class="pointer-events-auto hidden px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded text-xs tracking-widest shadow-lg shadow-red-900/50 transition">  
+                        EXAMINE OBJECT  
+                    </button>  
+                </div>  
+            </div>  
+  
+            <!-- Puzzle Terminal Modal / Area -->  
+            <div id="puzzle-container" class="glass-panel rounded-lg p-3 h-48 flex flex-col hidden relative">  
+                <div class="flex justify-between items-center mb-2 border-b border-red-900/40 pb-1">  
+                    <span id="puzzle-title" class="text-xs font-bold text-red-400 uppercase tracking-widest">SUB-SYSTEM HACK</span>  
+                    <button onclick="closePuzzle()" class="text-gray-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>  
+                </div>  
+  
+                <!-- Voltage Balancer Puzzle -->  
+                <div id="voltage-puzzle" class="hidden flex-1 flex flex-col justify-between">  
+                    <p class="text-xs text-gray-300">Balance the power sliders to equalize core node voltage at <span class="text-cyan-400 font-bold">100V</span>.</p>  
+                    <div class="grid grid-cols-3 gap-4 my-2">  
+                        <div>  
+                            <label class="text-[10px] text-gray-400 block mb-1">NODE A: <span id="val-a" class="text-red-400">20V</span></label>  
+                            <input type="range" id="slider-a" min="0" max="50" value="20" oninput="updateVoltagePuzzle()" class="w-full">  
+                        </div>  
+                        <div>  
+                            <label class="text-[10px] text-gray-400 block mb-1">NODE B: <span id="val-b" class="text-red-400">10V</span></label>  
+                            <input type="range" id="slider-b" min="0" max="50" value="10" oninput="updateVoltagePuzzle()" class="w-full">  
+                        </div>  
+                        <div>  
+                            <label class="text-[10px] text-gray-400 block mb-1">NODE C: <span id="val-c" class="text-red-400">30V</span></label>  
+                            <input type="range" id="slider-c" min="0" max="50" value="30" oninput="updateVoltagePuzzle()" class="w-full">  
+                        </div>  
+                    </div>  
+                    <div class="flex justify-between items-center">  
+                        <span class="text-xs">TOTAL OUTPUT: <span id="total-voltage" class="text-yellow-400 font-bold">60V</span> / 100V</span>  
+                        <button onclick="submitVoltagePuzzle()" class="px-3 py-1 bg-cyan-700 hover:bg-cyan-600 text-white rounded text-xs font-bold">OVERRIDE</button>  
+                    </div>  
+                </div>  
+  
+                <!-- Hexadecimal Memory Decoder Puzzle -->  
+                <div id="hex-puzzle" class="hidden flex-1 flex flex-col justify-between">  
+                    <p class="text-xs text-gray-300">Corrupted memory sector detected. Find matching hex pair for sequence: <span class="text-yellow-400 font-mono font-bold">0x7F :: 0x4E</span></p>  
+                    <div class="grid grid-cols-4 gap-2 my-2" id="hex-grid">  
+                        <!-- Rendered by JS -->  
+                    </div>  
+                    <span id="hex-status" class="text-xs text-red-400">Select correct pair...</span>  
+                </div>  
+            </div>  
+        </section>  
+  
+        <!-- Right Column: AI Interrogation Terminal & Forensic Copilot (3 cols) -->  
+        <section class="lg:col-span-3 flex flex-col gap-2 overflow-hidden">  
+  
+            <!-- Interrogation Terminal -->  
+            <div class="glass-panel rounded-lg p-3 flex-1 flex flex-col overflow-hidden border-red-600/40">  
+                <div class="flex items-center justify-between border-b border-red-900/40 pb-2 mb-2">  
+                    <div class="flex items-center space-x-2">  
+                        <div class="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping"></div>  
+                        <h2 class="text-xs font-bold text-red-500 uppercase tracking-widest">DR. ARIS THORNE AI</h2>  
+                    </div>  
+                    <span class="text-[10px] text-gray-500 font-mono">STATUS: UNHINGED</span>  
+                </div>  
+  
+                <!-- Chat History Log -->  
+                <div id="chat-history" class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">  
+                    <div class="bg-red-950/30 border border-red-800/40 p-2 rounded text-red-300">  
+                        <span class="text-red-500 font-bold block mb-1">DR. THORNE:</span>  
+                        Ah... detective. You are rummaging through my slaughterhouse. Can you hear the dead architect shivering beside you? Ask your questions... before I purge the life support.  
+                    </div>  
+                </div>  
+  
+                <!-- Input Box -->  
+                <form id="chat-form" onsubmit="handleChatSubmit(event)" class="mt-2 flex gap-2">  
+                    <input type="text" id="chat-input" placeholder="Interrogate the AI entity..." class="flex-1 bg-black/80 border border-red-900/60 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-red-500">  
+                    <button type="submit" id="send-btn" class="px-3 py-1.5 bg-red-900 hover:bg-red-800 text-white rounded text-xs font-bold transition">  
+                        <i class="fa-solid fa-paper-plane"></i>  
+                    </button>  
+                </form>  
+            </div>  
+  
+            <!-- Forensic Copilot FAC-v4 -->  
+            <div class="glass-panel-cyan rounded-lg p-3 h-36 flex flex-col">  
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-1 flex items-center justify-between">  
+                    <span><i class="fa-solid fa-microscope mr-1"></i> FAC-v4 Copilot</span>  
+                    <i class="fa-solid fa-spinner animate-spin text-cyan-500 hidden" id="forensic-spinner"></i>  
+                </h3>  
+                <div id="forensic-output" class="text-xs text-cyan-200/80 flex-1 overflow-y-auto leading-relaxed bg-black/40 p-2 rounded border border-cyan-900/30">  
+                    Awaiting object scan data. Select an anomaly in the 3D grid.  
+                </div>  
+            </div>  
+        </section>  
+    </main>  
+  
+    <!-- API Key Modal -->  
+    <div id="api-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">  
+        <div class="glass-panel rounded-lg p-5 max-w-md w-full border-yellow-600/50">  
+            <h3 class="text-base font-bold text-yellow-500 mb-2 flex items-center gap-2">  
+                <i class="fa-solid fa-key"></i> GEMINI API KEY CONFIGURATION  
+            </h3>  
+            <p class="text-xs text-gray-400 mb-4">  
+                Enter your Gemini API key for real-time unhinged AI responses from Dr. Aris Thorne. If left blank, simulated responses will be used.  
+            </p>  
+            <input type="password" id="api-key-input" placeholder="AIzaSy..." class="w-full bg-black border border-yellow-700/50 rounded p-2 text-xs text-yellow-300 mb-4 focus:outline-none">  
+            <div class="flex justify-end space-x-2">  
+                <button onclick="closeApiKeyModal()" class="px-4 py-1.5 bg-gray-800 text-gray-300 rounded text-xs hover:bg-gray-700">Cancel</button>  
+                <button onclick="saveApiKey()" class="px-4 py-1.5 bg-yellow-600 text-black font-bold rounded text-xs hover:bg-yellow-500">Save Key</button>  
+            </div>  
+        </div>  
+    </div>  
+  
+    <!-- JavaScript Engine -->  
+    <script src="{{ url_for('static', filename='js/cybervault-horror.js') }}"></script>  
+</body>  
+</html>

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberVault 3D - Interactive Investigation Environment</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e);
+            font-family: 'Courier New', monospace;
+            color: white;
+        }
+        
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .ui-panel {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+        }
+        
+        .top-left-panel {
+            top: 20px;
+            left: 20px;
+            min-width: 300px;
+        }
+        
+        .top-right-panel {
+            top: 20px;
+            right: 20px;
+            min-width: 250px;
+        }
+        
+        .bottom-left-panel {
+            bottom: 20px;
+            left: 20px;
+            max-width: 400px;
+        }
+        
+        .bottom-right-panel {
+            bottom: 20px;
+            right: 20px;
+            min-width: 200px;
+        }
+        
+        .objective-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 5px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .objective-completed {
+            background: rgba(40, 167, 69, 0.2);
+            border-left: 3px solid #28a745;
+        }
+        
+        .progress-bar-custom {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #0099cc);
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        
+        .keycard-slot {
+            display: inline-block;
+            width: 30px;
+            height: 20px;
+            border: 2px solid #333;
+            border-radius: 3px;
+            margin-right: 5px;
+            background: #222;
+            position: relative;
+        }
+        
+        .keycard-slot.brass { border-color: #B8860B; background: rgba(184, 134, 11, 0.2); }
+        .keycard-slot.blue { border-color: #0066cc; background: rgba(0, 102, 204, 0.2); }
+        .keycard-slot.red { border-color: #cc0000; background: rgba(204, 0, 0, 0.2); }
+        
+        .keycard-collected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .control-hint {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #00d4ff;
+            text-align: center;
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .loading-text {
+            color: #00d4ff;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .loading-progress {
+            width: 300px;
+            height: 4px;
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #ffffff);
+            animation: loadingAnimation 2s ease-in-out infinite;
+        }
+        
+        @keyframes loadingAnimation {
+            0% { width: 0%; }
+            50% { width: 100%; }
+            100% { width: 0%; }
+        }
+        
+        .terminal-window {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        
+        .terminal-line {
+            color: #0f0;
+            margin-bottom: 2px;
+        }
+        
+        .terminal-line.info { color: #00d4ff; }
+        .terminal-line.success { color: #28a745; }
+        .terminal-line.warning { color: #ffc107; }
+        .terminal-line.error { color: #dc3545; }
+        
+        .btn-cyber {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .btn-cyber:hover {
+            background: linear-gradient(45deg, #0099cc, #006699);
+            transform: translateY(-1px);
+            color: white;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-active { background: #28a745; animation: pulse 2s infinite; }
+        .status-pending { background: #ffc107; }
+        .status-inactive { background: #6c757d; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <h1 style="color: #00d4ff; font-size: 2.5rem; margin-bottom: 30px;">
+            🏢 CyberVault Investigation
+        </h1>
+        <div class="loading-text">
+            Initializing 3D Environment...
+        </div>
+        <div class="loading-progress">
+            <div class="loading-bar"></div>
+        </div>
+        <div style="margin-top: 20px; text-align: center; color: #888;">
+            <small>Professional Escape Room Experience</small><br>
+            <small>Physical Mechanisms • Industrial Cyber Theme • Interactive Puzzles</small>
+        </div>
+    </div>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay -->
+    <div class="ui-overlay">
+        <!-- Investigation Objectives Panel -->
+        <div class="ui-panel top-left-panel">
+            <h6 style="color: #00d4ff; margin-bottom: 15px;">
+                <i class="fas fa-clipboard-list me-2"></i>Investigation Objectives
+            </h6>
+            <div class="progress-bar-custom">
+                <div class="progress-fill" id="overall-progress"></div>
+            </div>
+            <div id="objectives-list">
+                <div class="objective-item" id="obj-inspect">
+                    <span class="status-indicator status-inactive"></span>
+                    <span>Inspect victim and collect evidence</span>
+                </div>
+                <div class="objective-item" id="obj-power">
+                    <span class="status-indicator status-inactive"></span>
+                    <span>Restore power system</span>
+                </div>
+                <div class="objective-item" id="obj-cipher">
+                    <span class="status-indicator status-inactive"></span>
+                    <span>Decode cipher mechanism</span>
+                </div>
+                <div class="objective-item" id="obj-laser">
+                    <span class="status-indicator status-inactive"></span>
+                    <span>Disable laser security grid</span>
+                </div>
+                <div class="objective-item" id="obj-vault">
+                    <span class="status-indicator status-inactive"></span>
+                    <span>Open vault with keycards</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status Panel -->
+        <div class="ui-panel top-right-panel">
+            <h6 style="color: #00d4ff; margin-bottom: 15px;">
+                <i class="fas fa-desktop me-2"></i>System Status
+            </h6>
+            <div class="mb-2">
+                <small>Power Grid:</small>
+                <span id="power-status" class="badge bg-danger ms-2">OFFLINE</span>
+            </div>
+            <div class="mb-2">
+                <small>Security:</small>
+                <span id="security-status" class="badge bg-warning ms-2">ACTIVE</span>
+            </div>
+            <div class="mb-3">
+                <small>Vault Access:</small>
+                <span id="vault-status" class="badge bg-secondary ms-2">LOCKED</span>
+            </div>
+            
+            <h6 style="color: #ffc107; margin-bottom: 10px; font-size: 0.9rem;">Keycards Collected:</h6>
+            <div class="mb-3">
+                <div class="keycard-slot brass" id="keycard-brass" title="Brass Keycard"></div>
+                <div class="keycard-slot blue" id="keycard-blue" title="Blue Keycard"></div>
+                <div class="keycard-slot red" id="keycard-red" title="Red Keycard"></div>
+            </div>
+            
+            <div class="text-center">
+                <button class="btn-cyber" onclick="resetInvestigation()">
+                    <i class="fas fa-redo me-1"></i>Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Terminal Panel -->
+        <div class="ui-panel bottom-left-panel">
+            <h6 style="color: #00d4ff; margin-bottom: 10px;">
+                <i class="fas fa-terminal me-2"></i>Investigation Terminal
+            </h6>
+            <div class="terminal-window" id="terminal-output">
+                <div class="terminal-line">$ cybervault --initialize investigation_047</div>
+                <div class="terminal-line info">[SYSTEM] 3D Environment loaded successfully</div>
+                <div class="terminal-line info">[READY] Forensic investigation protocols active</div>
+                <div class="terminal-line">[SCAN] Crime scene secured - begin investigation</div>
+                <div class="terminal-line">$ <span id="cursor">_</span></div>
+            </div>
+        </div>
+
+        <!-- Controls Panel -->
+        <div class="ui-panel bottom-right-panel">
+            <h6 style="color: #00d4ff; margin-bottom: 10px;">
+                <i class="fas fa-gamepad me-2"></i>Controls
+            </h6>
+            <div style="font-size: 0.8rem; line-height: 1.5;">
+                <div><strong>Mouse:</strong> Click to interact</div>
+                <div><strong>Drag:</strong> Rotate camera</div>
+                <div><strong>Scroll:</strong> Zoom in/out</div>
+                <div><strong>H:</strong> Play hologram</div>
+                <div><strong>R:</strong> Reset puzzles</div>
+                <div><strong>ESC:</strong> Help menu</div>
+            </div>
+            <div class="mt-2">
+                <button class="btn-cyber btn-sm" onclick="showHelp()">
+                    <i class="fas fa-question-circle me-1"></i>Help
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Hint -->
+    <div class="control-hint" id="control-hint">
+        Click on objects to investigate • Use mouse to look around
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import CyberVault3D from '/static/js/cybervault-3d.js';
+        
+        let vault3D;
+        
+        // Initialize after DOM load
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Show loading screen
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                
+                // Initialize 3D environment
+                vault3D = new CyberVault3D();
+                
+                // Setup UI interactions
+                setupUIHandlers();
+                
+                // Hide initial control hint after 5 seconds
+                setTimeout(() => {
+                    const hint = document.getElementById('control-hint');
+                    if (hint) {
+                        hint.style.animation = 'fadeInUp 0.5s ease reverse';
+                        setTimeout(() => hint.style.display = 'none', 500);
+                    }
+                }, 5000);
+                
+            }, 3000);
+        });
+        
+        function setupUIHandlers() {
+            // Listen for game state updates
+            document.addEventListener('gameStateUpdate', updateUI);
+            
+            // Listen for terminal messages
+            document.addEventListener('terminalMessage', addTerminalMessage);
+            
+            // Setup cursor animation
+            animateCursor();
+        }
+        
+        function updateUI(event) {
+            const { gameState } = event.detail;
+            
+            // Update objectives
+            updateObjective('obj-inspect', gameState.keycards.brass);
+            updateObjective('obj-power', gameState.powerRestored);
+            updateObjective('obj-cipher', gameState.cipherUnlocked);
+            updateObjective('obj-laser', gameState.laserGridDisabled);
+            updateObjective('obj-vault', gameState.vaultOpened);
+            
+            // Update system status
+            document.getElementById('power-status').textContent = gameState.powerRestored ? 'ONLINE' : 'OFFLINE';
+            document.getElementById('power-status').className = `badge ms-2 ${gameState.powerRestored ? 'bg-success' : 'bg-danger'}`;
+            
+            document.getElementById('security-status').textContent = gameState.laserGridDisabled ? 'DISABLED' : 'ACTIVE';
+            document.getElementById('security-status').className = `badge ms-2 ${gameState.laserGridDisabled ? 'bg-success' : 'bg-warning'}`;
+            
+            document.getElementById('vault-status').textContent = gameState.vaultOpened ? 'OPEN' : 'LOCKED';
+            document.getElementById('vault-status').className = `badge ms-2 ${gameState.vaultOpened ? 'bg-success' : 'bg-secondary'}`;
+            
+            // Update keycards
+            updateKeycard('keycard-brass', gameState.keycards.brass);
+            updateKeycard('keycard-blue', gameState.keycards.blue);
+            updateKeycard('keycard-red', gameState.keycards.red);
+            
+            // Update progress
+            const objectives = [
+                gameState.keycards.brass,
+                gameState.powerRestored,
+                gameState.cipherUnlocked,
+                gameState.laserGridDisabled,
+                gameState.vaultOpened
+            ];
+            const progress = Math.round((objectives.filter(obj => obj).length / objectives.length) * 100);
+            document.getElementById('overall-progress').style.width = progress + '%';
+        }
+        
+        function updateObjective(id, completed) {
+            const element = document.getElementById(id);
+            if (completed) {
+                element.classList.add('objective-completed');
+                const indicator = element.querySelector('.status-indicator');
+                indicator.className = 'status-indicator status-active';
+            }
+        }
+        
+        function updateKeycard(id, collected) {
+            const element = document.getElementById(id);
+            if (collected) {
+                element.classList.add('keycard-collected');
+            } else {
+                element.classList.remove('keycard-collected');
+            }
+        }
+        
+        function addTerminalMessage(event) {
+            const { message, type } = event.detail;
+            const terminal = document.getElementById('terminal-output');
+            
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type || ''}`;
+            line.textContent = message;
+            
+            // Insert before cursor
+            const cursor = document.getElementById('cursor');
+            terminal.insertBefore(line, cursor.parentElement);
+            
+            // Scroll to bottom
+            terminal.scrollTop = terminal.scrollHeight;
+            
+            // Limit lines
+            const lines = terminal.querySelectorAll('.terminal-line');
+            if (lines.length > 20) {
+                lines[0].remove();
+            }
+        }
+        
+        function animateCursor() {
+            const cursor = document.getElementById('cursor');
+            setInterval(() => {
+                cursor.style.opacity = cursor.style.opacity === '0' ? '1' : '0';
+            }, 500);
+        }
+        
+        // Global functions for UI buttons
+        window.resetInvestigation = function() {
+            if (vault3D) {
+                vault3D.resetPuzzles();
+            }
+        };
+        
+        window.showHelp = function() {
+            if (vault3D) {
+                vault3D.showHelpMenu();
+            }
+        };
+        
+        // Dispatch custom events for game state updates
+        window.updateGameState = function(gameState) {
+            document.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: { gameState } }));
+        };
+        
+        window.addTerminalLog = function(message, type) {
+            document.dispatchEvent(new CustomEvent('terminalMessage', { detail: { message, type } }));
+        };
+    </script>
+</body>
+</html>

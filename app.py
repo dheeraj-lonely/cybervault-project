@@ -444,6 +444,138 @@ def index():
 def game():
     return render_template('game.html')
 
+@app.route('/cybervault-3d')
+def cybervault_3d():
+    return render_template('cybervault-3d.html')
+
+@app.route('/ai-terminal')
+def ai_terminal():
+    return render_template('ai-terminal.html')
+
+@app.route('/cybervault-advanced')
+def cybervault_advanced():
+    return render_template('cybervault-advanced.html')
+
+@app.route('/api/interrogate', methods=['POST'])
+def interrogate_suspect():
+    data = request.json
+    question = data.get('question', '')
+    evidence = data.get('evidence', [])
+    stress_level = data.get('stressLevel', 45)
+    conversation_history = data.get('conversationHistory', [])
+    
+    # Simulate AI response based on question and evidence
+    response = generate_criminal_response(question, evidence, stress_level)
+    new_stress_level = calculate_stress_change(question, evidence, stress_level)
+    hints = generate_analysis_hints(question, evidence, new_stress_level)
+    
+    return jsonify({
+        'response': response,
+        'newStressLevel': new_stress_level,
+        'hints': hints,
+        'timestamp': datetime.now().isoformat()
+    })
+
+def generate_criminal_response(question, evidence, stress_level):
+    """Generate realistic criminal responses based on psychological profiling"""
+    
+    # Stress-based response patterns
+    if stress_level < 30:
+        confident_responses = [
+            "You're wasting your time with these questions.",
+            "I've already told you everything I know.",
+            "Your evidence is circumstantial at best.",
+            "I was nowhere near the facility that night.",
+            "You clearly don't understand the complexity of the system."
+        ]
+        return random.choice(confident_responses)
+    
+    elif stress_level < 60:
+        defensive_responses = [
+            "I don't appreciate your tone, investigator.",
+            "That evidence could have been planted by anyone.",
+            "You're trying to frame me for something I didn't do.",
+            "I demand to speak with my attorney.",
+            "The real culprit is still out there while you waste time with me."
+        ]
+        return random.choice(defensive_responses)
+    
+    elif stress_level < 85:
+        nervous_responses = [
+            "I... I might have been there, but not for the reasons you think.",
+            "Look, things got complicated. It wasn't supposed to happen like this.",
+            "Dr. Martinez was getting too close to something dangerous.",
+            "You don't understand the forces at play here.",
+            "Fine, but if I talk, I need protection. They'll come after me too."
+        ]
+        return random.choice(nervous_responses)
+    
+    else:  # Breaking point
+        confession_responses = [
+            "Alright! Yes, I was involved, but I wasn't the mastermind!",
+            "The vault contains more than just corporate data - it's a kill switch!",
+            "Dr. Martinez discovered our operation. She had to be silenced.",
+            "There are others - powerful people who will stop at nothing.",
+            "I can give you names, locations, everything... but you have to protect me!"
+        ]
+        return random.choice(confession_responses)
+
+def calculate_stress_change(question, evidence, current_stress):
+    """Calculate how the question and evidence affect stress level"""
+    stress_change = 0
+    
+    # Evidence-based stress increase
+    high_impact_evidence = ['encrypted-files', 'security-footage']
+    medium_impact_evidence = ['access-logs', 'network-analysis']
+    
+    for ev in evidence:
+        if ev in high_impact_evidence:
+            stress_change += 15
+        elif ev in medium_impact_evidence:
+            stress_change += 8
+    
+    # Question-based stress patterns
+    stress_keywords = ['murder', 'kill', 'evidence', 'caught', 'proof', 'witness']
+    for keyword in stress_keywords:
+        if keyword.lower() in question.lower():
+            stress_change += 10
+            break
+    
+    # Random variation
+    stress_change += random.randint(-5, 10)
+    
+    # Apply stress change with bounds
+    new_stress = max(0, min(100, current_stress + stress_change))
+    return new_stress
+
+def generate_analysis_hints(question, evidence, stress_level):
+    """Generate psychological analysis hints based on interrogation progress"""
+    hints = []
+    
+    if stress_level > 70:
+        hints.append("Subject showing signs of psychological breakdown")
+    
+    if len(evidence) > 2:
+        hints.append("Multiple evidence pieces creating cognitive dissonance")
+    
+    if 'encrypted-files' in evidence:
+        hints.append("Technical evidence triggers defensive responses")
+    
+    if stress_level > 85:
+        hints.append("Subject ready to reveal critical information")
+    
+    # Ensure we always return 3 hints
+    default_hints = [
+        "Monitor body language for deception indicators",
+        "Cross-reference statements with known facts",
+        "Look for inconsistencies in timeline narrative"
+    ]
+    
+    while len(hints) < 3:
+        hints.append(default_hints[len(hints)])
+    
+    return hints[:3]
+
 
 # ══════════════════════════════════════════════════════════════════
 #  API — Health / Status
