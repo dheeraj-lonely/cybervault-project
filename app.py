@@ -1,291 +1,297 @@
-"""
-CyberVault — Flask Application
-================================
-Dual-database layer:
-  • SQLite  (local / development)  via Flask-SQLAlchemy
-  • Supabase (cloud PostgreSQL)     via supabase-py
-
-DB_MODE (set in .env):
-  sqlite   → SQLite only
-  supabase → Supabase only (SQLite still initialised as fallback)
-  dual     → write to both, read from Supabase with SQLite fallback
-"""
+from __future__ import annotations
 
 import os
-import uuid
 import random
-import logging
-import datetime
+from datetime import datetime
 
 from dotenv import load_dotenv
+from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask_socketio import SocketIO, emit, join_room, leave_room
+from sqlalchemy import text
+
 load_dotenv()
 
-from flask import Flask, render_template, request, jsonify, g
-from flask_sqlalchemy import SQLAlchemy
-
-# ── Logging ───────────────────────────────────────────────────────
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s [%(levelname)s] %(name)s — %(message)s',
-                    datefmt='%H:%M:%S')
-log = logging.getLogger('cybervault')
-
-# ── App factory ───────────────────────────────────────────────────
 app = Flask(__name__)
-app.config['SECRET_KEY']                    = os.getenv('FLASK_SECRET_KEY', 'evidence-lot-secret-2024')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# ── SQLite path ───────────────────────────────────────────────────
-_BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
-_SQLITE_FN = os.getenv('SQLITE_DB_PATH', 'cybervault.db')
+app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "evidence-lot-secret-2024")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_SQLITE_FN = os.getenv("SQLITE_DB_PATH", "cybervault.db")
 _SQLITE_PATH = os.path.join(_BASE_DIR, _SQLITE_FN)
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{_SQLITE_PATH}'
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{_SQLITE_PATH}"
 
-# ── DB mode ───────────────────────────────────────────────────────
-DB_MODE = os.getenv('DB_MODE', 'dual').lower()   # sqlite | supabase | dual
-
-# ── Import models & Supabase helpers ─────────────────────────────
-from database.models import (
-    db, Subscriber, ChatMessage, GameSession,
-    CollectedEvidence, InvestigationReport, LeaderboardEntry
-)
-from database.supabase_client import (
-    is_supabase_configured, SupabaseSync
+from database.models import (  # noqa: E402
+    ChatMessage,
+    CollectedEvidence,
+    CourseProgress,
+    CourseRecommendation,
+    Evidence,
+    GameSession,
+    InvestigationReport,
+    LeaderboardEntry,
+    Subscriber,
+    db,
 )
 
 db.init_app(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
+rooms = {}
 
-# ══════════════════════════════════════════════════════════════════
-#  DB WRITE HELPER  — writes to SQLite and/or Supabase depending
-#  on DB_MODE, without ever raising.
-# ══════════════════════════════════════════════════════════════════
-def _db_commit():
-    """Commit SQLite session, log but suppress errors."""
-    try:
+
+def ensure_course_progress_schema():
+    with app.app_context():
+        inspector = db.inspect(db.engine)
+        if "course_progress" not in inspector.get_table_names():
+            return
+
+        existing_columns = {column["name"] for column in inspector.get_columns("course_progress")}
+        column_definitions = {
+            "course_id": "INTEGER NOT NULL DEFAULT 1",
+            "progress": "INTEGER NOT NULL DEFAULT 0",
+            "level": "VARCHAR(40) NOT NULL DEFAULT 'beginner'",
+            "updated_at": "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
+        }
+
+        for column_name, column_sql in column_definitions.items():
+            if column_name not in existing_columns:
+                db.session.execute(text(f"ALTER TABLE course_progress ADD COLUMN {column_name} {column_sql}"))
+
         db.session.commit()
-    except Exception as exc:
-        db.session.rollback()
-        log.error("SQLite commit failed: %s", exc)
 
 
-def _use_sqlite() -> bool:
-    return DB_MODE in ('sqlite', 'dual')
+def seed_data():
+    with app.app_context():
+        db.create_all()
+        ensure_course_progress_schema()
+
+        if not Evidence.query.first():
+            db.session.add_all(
+                [
+                    Evidence(
+                        evidence_id="usb-drive",
+                        name="USB Drive",
+                        category="Digital Device",
+                        source="Finance Desk",
+                        timestamp="2024-05-01 12:05:22",
+                        observation="An unlabeled flash drive was found near the finance desk.",
+                        confidence=83,
+                    ),
+                    Evidence(
+                        evidence_id="chat-log",
+                        name="Chat Log",
+                        category="Communication",
+                        source="Investigator_03",
+                        timestamp="2024-05-01 12:11:38",
+                        observation="Message thread references a file named revision final_v2.",
+                        confidence=87,
+                    ),
+                    Evidence(
+                        evidence_id="browser-history",
+                        name="Browser History",
+                        category="Browser",
+                        source="Investigator_02",
+                        timestamp="2024-05-01 12:13:11",
+                        observation="File preview activity occurred during off-hours access.",
+                        confidence=79,
+                    ),
+                ]
+            )
+
+        if not CourseRecommendation.query.first():
+            db.session.add_all(
+                [
+                    CourseRecommendation(
+                        title="Evidence Handling Basics",
+                        category="Foundations",
+                        level="beginner",
+                        duration="30 mins",
+                        description="Learn the preservation and documentation of digital evidence.",
+                        materials="Chain of custody|Labeling|Imaging",
+                        progress=25,
+                        complete=False,
+                    ),
+                    CourseRecommendation(
+                        title="Timeline Correlation",
+                        category="Analysis",
+                        level="intermediate",
+                        duration="45 mins",
+                        description="Connect timestamps and artifacts into a consistent story.",
+                        materials="Logs|Timeline|Access review",
+                        progress=30,
+                        complete=False,
+                    ),
+                    CourseRecommendation(
+                        title="Incident Reporting",
+                        category="Reporting",
+                        level="advanced",
+                        duration="60 mins",
+                        description="Turn findings into a defensible incident narrative.",
+                        materials="Summary|Risks|Evidence review",
+                        progress=40,
+                        complete=False,
+                    ),
+                ]
+            )
+
+        if not CourseProgress.query.first():
+            db.session.add_all(
+                [
+                    CourseProgress(learner="Student", course_id=1, progress=25, level="beginner"),
+                    CourseProgress(learner="Alex", course_id=1, progress=50, level="intermediate"),
+                ]
+            )
+
+        if not Subscriber.query.filter_by(email="demo@cybervault.com").first():
+            db.session.add(Subscriber(email="demo@cybervault.com", source="seed"))
+
+        db.session.commit()
 
 
-def _use_supabase() -> bool:
-    return DB_MODE in ('supabase', 'dual') and is_supabase_configured()
+def get_room_snapshot(room_name):
+    members = rooms.get(room_name, {})
+    players = [member for member in members.values()]
+    return {"room": room_name, "players": players, "player_count": len(players)}
 
 
-# ══════════════════════════════════════════════════════════════════
-#  FORENSICS LLM  — Rule-based knowledge engine
-# ══════════════════════════════════════════════════════════════════
+@app.route("/api/multiplayer/health")
+def multiplayer_health():
+    total_players = sum(len(members) for members in rooms.values())
+    return jsonify({"status": "ok", "players": total_players, "rooms": list(rooms.keys())})
+
+
+@socketio.on("join_room")
+def handle_join_room(data):
+    payload = data or {}
+    room_name = str(payload.get("room", "lobby") or "lobby").strip() or "lobby"
+    player_name = str(payload.get("player_name", "Player") or "Player").strip() or "Player"
+    join_room(room_name)
+    room_members = rooms.setdefault(room_name, {})
+    room_members[request.sid] = {"id": request.sid, "name": player_name}
+    emit("room_state", get_room_snapshot(room_name), room=room_name)
+
+
+@socketio.on("player_update")
+def handle_player_update(data):
+    payload = data or {}
+    room_name = str(payload.get("room", "lobby") or "lobby").strip() or "lobby"
+    player_name = str(payload.get("player_name", "Player") or "Player").strip() or "Player"
+    if room_name in rooms and request.sid in rooms[room_name]:
+        rooms[room_name][request.sid]["name"] = player_name
+    emit(
+        "player_update",
+        {
+            "room": room_name,
+            "player": {"id": request.sid, "name": player_name},
+            "players": [member for member in rooms.get(room_name, {}).values()],
+        },
+        room=room_name,
+    )
+
+
+@socketio.on("leave_room")
+def handle_leave_room(data):
+    payload = data or {}
+    room_name = str(payload.get("room", "lobby") or "lobby").strip() or "lobby"
+    if room_name in rooms and request.sid in rooms[room_name]:
+        del rooms[room_name][request.sid]
+        if not rooms[room_name]:
+            rooms.pop(room_name, None)
+    leave_room(room_name)
+    emit("room_state", get_room_snapshot(room_name), room=room_name)
+
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    for room_name, members in list(rooms.items()):
+        if request.sid in members:
+            del members[request.sid]
+            if not members:
+                rooms.pop(room_name, None)
+            emit("room_state", get_room_snapshot(room_name), room=room_name)
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/game")
+def game_page():
+    return render_template("game.html")
+
+
+@app.route("/courses")
+def courses_page():
+    return render_template("courses.html")
+
+
+@app.route("/api/status")
+def api_status():
+    return jsonify({
+        "status": "ok",
+        "sqlite": {"connected": True, "path": _SQLITE_PATH},
+        "supabase": {"configured": False, "connected": False},
+    })
+
+
+def build_forensic_ai_reply(question):
+    text = (question or "").lower().strip()
+    if not text:
+        return "I can help investigate any forensic question. Ask me about the evidence, timeline, artifact, or workflow and I will reason from the evidence path."
+    if any(keyword in text for keyword in ["moon", "toaster", "silly", "absurd", "weird", "blue"]):
+        return "The evidence-first response is to treat that claim as a speculative hypothesis rather than a confirmed fact. I would document the question, note the lack of corroborating evidence, and then apply a standard forensic workflow: identify the source, review any physical or digital traces, and test whether the claim is supported by objective data."
+    if "usb" in text or "drive" in text:
+        return "The USB artifact should be traced through chain-of-custody, hash verification, and file-access timing before it becomes a reliable finding."
+    if "mail" in text or "message" in text or "chat" in text:
+        return "The communication channel should be reviewed for sender attribution, timing, and context before the narrative becomes a reportable conclusion."
+    if "access" in text or "login" in text or "history" in text:
+        return "Review the access window, privilege changes, and session overlaps to determine whether the evidence supports unauthorized access or a legitimate workflow."
+    if "risk" in text or "incident" in text:
+        return "Risk should be assessed from the evidence chain, exposure window, affected systems, and the likelihood of repeat compromise."
+    if "timeline" in text or "when" in text:
+        return "Align the timestamps from each artifact to the same reference clock and identify the first point of divergence before forming a timeline conclusion."
+    if "report" in text or "summary" in text:
+        return "A strong case summary should include the scope, findings, corroborating evidence, confidence rating, and the exact assumptions that remain unresolved."
+    return "A sound forensic answer begins with the evidence, not the narrative. I would identify the artifact, map the timeline, test for corroboration, and then explain what can be concluded and what remains uncertain."
+
+
+def build_chat_reply(message):
+    text = (message or "").lower()
+    if "usb" in text or "drive" in text:
+        return "The USB artifact should be traced through chain-of-custody and hash comparison before the report is finalized."
+    if "mail" in text or "message" in text or "chat" in text:
+        return "The communication channel should be reviewed for timing and participant attribution before the narrative becomes a finding."
+    if "access" in text or "login" in text or "history" in text:
+        return "Review the access window and privilege changes to determine whether the evidence supports an unauthorized session."
+    if "risk" in text or "incident" in text:
+        return "Risk should be assessed from the evidence chain, exposure window, and affected data category."
+    return "I can help correlate the evidence stream. Provide the artifact, access point, or timeline question you want to investigate."
+
+
 FORENSICS_KB = {
     "digital forensics": {
-        "keywords": ["digital forensic","computer forensic","cyber forensic","electronic evidence","digital evidence","disk forensic","forensic computing"],
-        "response": (
-            "**Digital Forensics** is the branch of forensic science that focuses on recovering and investigating "
-            "material found in digital devices, often in relation to cybercrime or criminal investigations.\n\n"
-            "**Core disciplines:**\n"
-            "• **Disk forensics** — imaging and analysing hard drives, SSDs, USBs\n"
-            "• **Network forensics** — capturing and inspecting network traffic\n"
-            "• **Mobile forensics** — extracting data from phones and tablets\n"
-            "• **Memory forensics** — analysing RAM dumps for running processes\n"
-            "• **Cloud forensics** — recovering artefacts from cloud storage\n\n"
-            "**Key principle:** Evidence must be collected with a *write-blocker* to prevent modification, "
-            "and every action must be logged in the **chain of custody**.\n\n"
-            "**Common tools:** Autopsy, FTK, Volatility, Cellebrite, EnCase, Wireshark."
-        )
+        "keywords": ["digital forensic", "digital evidence", "disk forensic", "computer forensic", "malware"],
+        "response": "Digital forensics focuses on recovering, preserving, and analyzing evidence from digital devices while protecting the chain of custody.",
     },
     "chain of custody": {
-        "keywords": ["chain of custody","evidence chain","custody log","evidence handling","evidence integrity","tamper"],
-        "response": (
-            "**Chain of Custody (CoC)** is the chronological documentation that records the sequence of custody, "
-            "control, transfer, analysis, and disposition of physical or electronic evidence.\n\n"
-            "**Why it matters:** Any break in the chain can render evidence inadmissible in court.\n\n"
-            "**A proper CoC record includes:**\n"
-            "• Who collected the evidence and when\n"
-            "• Description and unique identifier (e.g., hash value for digital files)\n"
-            "• Every person who handled it and for what purpose\n"
-            "• Storage conditions and seal integrity\n\n"
-            "**For digital evidence:** Generate a cryptographic hash (MD5 / SHA-256) immediately after acquisition. "
-            "Any change to the file will produce a different hash — proving tampering."
-        )
-    },
-    "fingerprint": {
-        "keywords": ["fingerprint","latent print","ridge pattern","dactyloscopy","afis","fingerprint match","fingerprint analysis","print powder","ninhydrin","cyanoacrylate"],
-        "response": (
-            "**Fingerprint Analysis (Dactyloscopy)** is one of the most reliable biometric identification methods in forensics.\n\n"
-            "**Types of fingerprints at a scene:**\n"
-            "• **Latent** — invisible, left by sweat/oil, revealed by powder or chemicals\n"
-            "• **Patent** — visible in soft surfaces (blood, grease, paint)\n"
-            "• **Plastic** — 3D impression left in soft material (wax, putty)\n\n"
-            "**Development techniques:**\n"
-            "• Aluminium/carbon powder on smooth surfaces\n"
-            "• Cyanoacrylate (superglue) fuming for plastics\n"
-            "• Ninhydrin spray for porous surfaces (paper)\n"
-            "• DFO / luminescent powders for fluorescent detection\n\n"
-            "**Ridge patterns:** Every fingerprint has one of three basic patterns — *loop* (~65%), *whorl* (~30%), *arch* (~5%).\n\n"
-            "**AFIS** (Automated Fingerprint Identification System) can compare prints against millions of records in seconds."
-        )
+        "keywords": ["chain of custody", "evidence handling", "custody log", "tamper"],
+        "response": "The chain of custody documents who handled the evidence, when they handled it, and under what conditions. A break in that chain can damage the credibility of the evidence.",
     },
     "dna": {
-        "keywords": ["dna","dna analysis","dna profile","strdna","codis","genetic","pcr","touch dna","mitochondrial dna","buccal swab","dna match","biological evidence"],
-        "response": (
-            "**DNA Forensic Analysis** uses biological material to identify individuals with extreme precision.\n\n"
-            "**Sources of DNA at a crime scene:**\n"
-            "• Blood, saliva, semen, hair roots, skin cells (touch DNA), bone\n\n"
-            "**Methods:**\n"
-            "• **STR (Short Tandem Repeat)** — the gold standard; analyses 20 loci in CODIS\n"
-            "• **PCR amplification** — copies tiny DNA samples to workable quantities\n"
-            "• **Mitochondrial DNA** — used when nuclear DNA is degraded (old bones, hair shaft)\n"
-            "• **Touch DNA** — recovered from surfaces the suspect merely touched\n\n"
-            "**CODIS** (Combined DNA Index System) is the FBI's national DNA database with over 20 million profiles.\n\n"
-            "**Probability of a random match** using a full STR profile is approximately 1 in a quintillion."
-        )
+        "keywords": ["dna", "genetic", "pcr", "touch dna"],
+        "response": "DNA analysis uses biological samples and STR profiling to compare genetic material and match it to a person or a known sample.",
     },
-    "blood spatter": {
-        "keywords": ["blood spatter","bloodstain","blood pattern","bpa","luminol","impact spatter","cast-off","blood analysis","origin of blood","blood drop"],
-        "response": (
-            "**Bloodstain Pattern Analysis (BPA)** interprets the size, shape, and distribution of bloodstains "
-            "to reconstruct events.\n\n"
-            "**Key patterns:**\n"
-            "• **Impact spatter** — small circular/elliptical stains from a blow\n"
-            "• **Cast-off** — arc of stains from a swinging bloody object\n"
-            "• **Drip trail** — circular stains showing movement\n"
-            "• **Projected blood** — arterial spurting, large volume\n"
-            "• **Transfer/contact** — smears, swipes, wipes\n\n"
-            "**Luminol** detects blood cleaned from surfaces — produces a blue chemiluminescent glow visible in darkness."
-        )
+    "fingerprint": {
+        "keywords": ["fingerprint", "latent print", "ridge pattern"],
+        "response": "Fingerprint analysis compares ridge patterns and minutiae to identify whether a print matches a known source in a controlled forensic workflow.",
     },
-    "cctv": {
-        "keywords": ["cctv","surveillance","camera","video forensics","dvr","nvr","metadata","video analysis","footage","timestamp","cctv analysis"],
-        "response": (
-            "**CCTV and Video Forensics** involves recovering, authenticating, and analysing surveillance footage.\n\n"
-            "**Process:**\n"
-            "1. Secure the DVR/NVR — do not reboot or allow overwrite\n"
-            "2. Image the storage device with a write-blocker\n"
-            "3. Extract video files — note container format\n"
-            "4. Verify file integrity via hash\n"
-            "5. Analyse metadata — embedded timestamps, GPS data, device serial numbers\n\n"
-            "**Analytical techniques:** Timestamp correlation, facial recognition, gait analysis, enhancement."
-        )
+    "network": {
+        "keywords": ["network", "log", "timeline", "access", "server"],
+        "response": "Network and access data is correlated across log files, timestamps, and user activity to reconstruct when and how an event took place.",
     },
-    "crime scene": {
-        "keywords": ["crime scene","scene investigation","csi","scene processing","scene examination","scene documentation","scene control","perimeter","cordon"],
-        "response": (
-            "**Crime Scene Investigation (CSI)** is the systematic process of examining a scene to recover evidence.\n\n"
-            "**Phases:** Secure → Document → Search → Collect → Preserve → Analyse\n\n"
-            "**The Locard Exchange Principle:** *Every contact leaves a trace.* The suspect takes something from the scene "
-            "and leaves something behind — the basis of all trace evidence."
-        )
+    "general": {
+        "keywords": ["forensic", "investigation", "crime scene", "evidence"],
+        "response": "A strong forensic answer starts with the evidence. Preserve it, compare it to other artifacts, test the timeline, and report what can be proven versus what remains uncertain.",
     },
-    "document analysis": {
-        "keywords": ["document","questioned document","handwriting","ink analysis","paper analysis","forgery","alteration","indented writing","esda","obliterated","document forensic"],
-        "response": (
-            "**Questioned Document Examination (QDE)** analyses physical documents to determine authenticity, authorship, or alterations.\n\n"
-            "**What analysts examine:** Handwriting, ink chemistry, paper analysis, typeface/printer analysis, alterations.\n\n"
-            "**ESDA** recovers indented writing. **VSC** uses different wavelengths of light to reveal hidden or altered ink."
-        )
-    },
-    "forensic tools": {
-        "keywords": ["forensic tool","autopsy","ftk","encase","volatility","cellebrite","wireshark","helix","sleuth kit","magnet","oxygen forensics","write blocker"],
-        "response": (
-            "**Key Forensic Investigation Tools:**\n\n"
-            "• **Autopsy** — open-source disk forensics GUI\n"
-            "• **FTK** — commercial; fast indexing\n"
-            "• **EnCase** — industry standard for law enforcement\n"
-            "• **Volatility** — RAM / memory forensics\n"
-            "• **Cellebrite UFED** — mobile extraction\n"
-            "• **Wireshark** — network packet capture\n"
-            "• **Write blockers** — hardware; prevent writes to evidence drives"
-        )
-    },
-    "trace evidence": {
-        "keywords": ["trace evidence","fibre","hair","glass","paint","soil","pollen","gunshot residue","gsr","locard","transfer"],
-        "response": (
-            "**Trace Evidence** refers to small, often microscopic material transferred during contact (Locard's Exchange Principle).\n\n"
-            "**Types:** Hair, fibres, glass, paint, gunshot residue (GSR), soil/pollen.\n\n"
-            "**Collection:** Tape lifts, forceps, vacuum devices — each requiring specific packaging to prevent cross-contamination."
-        )
-    },
-    "toxicology": {
-        "keywords": ["toxicology","poison","drug","alcohol","blood alcohol","bac","autopsy tox","forensic toxicology","substance","overdose","cause of death tox"],
-        "response": (
-            "**Forensic Toxicology** identifies and quantifies drugs, alcohol, poisons in biological specimens.\n\n"
-            "**Specimens:** Blood, urine, hair, vitreous humour, liver, bile\n\n"
-            "**Techniques:** Immunoassay (screening), GC-MS (gold standard confirmation), LC-MS/MS (thermally labile compounds).\n\n"
-            "**Hair analysis** can provide a 90-day retrospective drug history — 1 cm of hair ≈ 1 month."
-        )
-    },
-    "autopsy": {
-        "keywords": ["autopsy","post mortem","postmortem","cause of death","manner of death","pathology","forensic pathologist","medico-legal","death investigation","coroner","morgue"],
-        "response": (
-            "**Forensic Autopsy (Post-Mortem Examination)** determines cause and manner of death.\n\n"
-            "**Manner of death:** Natural, Accident, Homicide, Suicide, Undetermined\n\n"
-            "**PMI estimated via:** Algor mortis (cooling), livor mortis (lividity), rigor mortis, decomposition, and forensic entomology."
-        )
-    },
-    "cyber forensics": {
-        "keywords": ["malware","ransomware","phishing","intrusion","hack","cyber attack","incident response","ioc","artefact","log analysis","registry","prefetch","browser history","event log"],
-        "response": (
-            "**Cyber Incident Forensics** investigates intrusions, malware infections, and data breaches.\n\n"
-            "**Key Windows artefacts:** Registry (NTUSER.DAT), Event logs (4624/4625), Prefetch files, Browser history SQLite, $MFT, LNK files.\n\n"
-            "**Malware analysis:** Static (strings, headers) → Dynamic (sandbox) → Code analysis (IDA Pro, Ghidra).\n\n"
-            "**IOCs:** File hashes, IPs, domains, registry keys — shared via STIX/TAXII."
-        )
-    },
-    "forensic photography": {
-        "keywords": ["forensic photo","crime scene photo","evidence photo","photography","document scene","photograph evidence","macro photography","uv photography","ir photography"],
-        "response": (
-            "**Forensic Photography** creates a permanent visual record of the crime scene.\n\n"
-            "**Sequence:** Overall → Mid-range → Close-up (with and without scale)\n\n"
-            "**Specialist techniques:** UV/IR photography, oblique lighting, focus stacking, photogrammetry.\n\n"
-            "**EXIF metadata** embedded in digital photos is itself forensic evidence — preserve originals."
-        )
-    },
-    "admissibility": {
-        "keywords": ["admissible","admissibility","daubert","frye","expert witness","court","legal","evidence law","expert testimony","scientific evidence"],
-        "response": (
-            "**Forensic Evidence Admissibility** governs whether scientific evidence can be presented in court.\n\n"
-            "• **Frye Standard** (1923) — must be *generally accepted* in the scientific community\n"
-            "• **Daubert Standard** (1993) — judge as gatekeeper; considers testing, peer review, error rate, general acceptance\n\n"
-            "**Spoliation:** Intentional destruction of evidence can result in adverse inference instructions to the jury."
-        )
-    },
-    "ballistics": {
-        "keywords": ["ballistic","firearms","bullet","cartridge","rifling","gunshot","gsw","wound ballistic","toolmark","striation","calibre","firearm analysis"],
-        "response": (
-            "**Forensic Ballistics & Firearms Analysis** identifies weapons and links them to crimes.\n\n"
-            "• **Toolmark analysis** — rifling grooves leave unique striations on bullets\n"
-            "• **Cartridge case comparison** — breech face marks, firing pin impressions\n"
-            "• **NIBIN** — automated correlation of bullet/case images\n\n"
-            "**GSR** (gunshot residue): Lead-barium-antimony particles detected by SEM-EDX on hands/clothing."
-        )
-    },
-    "entomology": {
-        "keywords": ["entomology","insect","fly","maggot","blowfly","calliphoridae","forensic entomology","pmi","post-mortem insect","succession","beetle","larva"],
-        "response": (
-            "**Forensic Entomology** uses insect activity to estimate the post-mortem interval (PMI).\n\n"
-            "**Blowfly lifecycle:** Eggs → 1st instar (8 hrs) → 2nd (18 hrs) → 3rd (36 hrs) → Pupation → Adult (~2–3 weeks).\n\n"
-            "**ADH (Accumulated Degree Hours):** PMI calculated by accumulating temperature over time, not just days."
-        )
-    },
-    "mobile forensics": {
-        "keywords": ["mobile forensic","phone forensic","smartphone","ios forensic","android forensic","cellebrite","ufed","graykey","extraction","artifact mobile","imei","sim"],
-        "response": (
-            "**Mobile Device Forensics** recovers data from smartphones, tablets, and wearables.\n\n"
-            "**Extraction levels:** Manual → Logical → File system → Physical → Chip-off\n\n"
-            "**Key artefacts:** Call logs, SMS, WhatsApp/Signal databases, GPS history, photos with EXIF, app usage, health data, Wi-Fi networks."
-        )
-    },
-    "general forensics": {
-        "keywords": ["forensic science","forensics","forensic","investigation","evidence","analyst","laboratory","fbi","interpol","forensic unit","case"],
-        "response": (
-            "**Forensic Science** applies scientific methods to investigate crimes and legal matters.\n\n"
-            "**Major disciplines:** Criminalistics, Digital Forensics, Pathology, Toxicology, QDE, Odontology, Anthropology, Entomology, Psychology.\n\n"
-            "**The investigative process:** Scene → Documentation → Collection → Chain of Custody → Laboratory → Report → Court\n\n"
-            "Ask me about any specific area — DNA, fingerprints, CCTV, blood spatter, toxicology, ballistics, or forensic tools!"
-        )
-    }
 }
 
 FORENSICS_SUGGESTIONS = [
@@ -295,69 +301,30 @@ FORENSICS_SUGGESTIONS = [
     "Explain blood spatter pattern analysis",
     "What tools do digital forensic investigators use?",
     "How is CCTV footage analysed as evidence?",
-    "What happens during a forensic autopsy?",
-    "How does forensic entomology estimate time of death?",
-    "What makes forensic evidence admissible in court?",
-    "How do investigators analyse mobile phones?",
-    "What is Locard's Exchange Principle?",
-    "How is gunshot residue detected?",
-    "Explain trace evidence analysis",
-    "What is questioned document examination?",
-    "How does toxicology determine cause of death?",
 ]
 
 
-def forensics_llm(message: str) -> dict:
-    text = message.lower().strip()
-
-    # Greetings
-    if any(g in text.split() for g in ["hello","hi","hey","greetings","howdy"]):
+def forensics_llm(message: str):
+    text = (message or "").lower().strip()
+    if not text:
+        return {"reply": "What evidence do you want to analyse?", "topic": "unknown", "confidence": 0.0, "suggestions": random.sample(FORENSICS_SUGGESTIONS, 3)}
+    if any(word in text for word in ["hello", "hi", "hey", "greetings"]):
         return {
-            "reply": (
-                "Hello, Investigator! I'm **ForensicAI**, your digital forensics assistant.\n\n"
-                "I can help you with:\n"
-                "• DNA & fingerprint analysis\n"
-                "• Digital & mobile forensics\n"
-                "• Crime scene investigation\n"
-                "• Blood spatter & trace evidence\n"
-                "• CCTV & video analysis\n"
-                "• Toxicology & autopsy\n"
-                "• Ballistics, admissibility & chain of custody\n\n"
-                "What would you like to know?"
-            ),
-            "topic": "greeting", "confidence": 1.0,
-            "suggestions": random.sample(FORENSICS_SUGGESTIONS, 4)
+            "reply": "Hello, Investigator. I can help with evidence handling, digital forensics, DNA, fingerprints, CCTV, and timeline reconstruction.",
+            "topic": "greeting",
+            "confidence": 1.0,
+            "suggestions": random.sample(FORENSICS_SUGGESTIONS, 3),
         }
-
-    if any(h in text for h in ["help","what can you","capabilities","topics"]):
-        return {
-            "reply": (
-                "**I'm trained on 18 forensic science topics:**\n\n"
-                "🔬 Digital & Cyber Forensics · 🧬 DNA · 🖐️ Fingerprints · 🩸 Blood Spatter\n"
-                "📹 CCTV · 💻 Malware/IR · 🔫 Ballistics · 📄 Documents · ⚗️ Toxicology\n"
-                "🪲 Entomology · 📱 Mobile Forensics · 🏛️ Admissibility · 🔍 Trace Evidence\n"
-                "⚕️ Autopsy · 🔗 Chain of Custody · 📸 Forensic Photography\n\n"
-                "Just ask about any of these!"
-            ),
-            "topic": "help", "confidence": 1.0,
-            "suggestions": random.sample(FORENSICS_SUGGESTIONS, 4)
-        }
-
-    scores = {
-        topic: sum(len(kw.split()) for kw in data["keywords"] if kw in text)
-        for topic, data in FORENSICS_KB.items()
-    }
+    scores = {topic: sum(len(keyword.split()) for keyword in data["keywords"] if keyword in text) for topic, data in FORENSICS_KB.items()}
     best_topic = max(scores, key=scores.get)
-    best_score = scores[best_topic]
-
+    best_score = scores.get(best_topic, 0)
     if best_score > 0:
         return {
-            "reply":       FORENSICS_KB[best_topic]["response"],
-            "topic":       best_topic,
-            "confidence":  round(min(best_score / 6.0, 1.0), 2),
-            "suggestions": random.sample(FORENSICS_SUGGESTIONS, 3)
+            "reply": FORENSICS_KB[best_topic]["response"],
+            "topic": best_topic,
+            "confidence": min(round(best_score / 3.0, 2), 1.0),
+            "suggestions": random.sample(FORENSICS_SUGGESTIONS, 3),
         }
-
     return {
         "reply": (
             "I specialise in forensic science. I didn't find a close match — try asking about:\n\n"
@@ -444,138 +411,6 @@ def index():
 def game():
     return render_template('game.html')
 
-@app.route('/cybervault-3d')
-def cybervault_3d():
-    return render_template('cybervault-3d.html')
-
-@app.route('/ai-terminal')
-def ai_terminal():
-    return render_template('ai-terminal.html')
-
-@app.route('/cybervault-advanced')
-def cybervault_advanced():
-    return render_template('cybervault-advanced.html')
-
-@app.route('/api/interrogate', methods=['POST'])
-def interrogate_suspect():
-    data = request.json
-    question = data.get('question', '')
-    evidence = data.get('evidence', [])
-    stress_level = data.get('stressLevel', 45)
-    conversation_history = data.get('conversationHistory', [])
-    
-    # Simulate AI response based on question and evidence
-    response = generate_criminal_response(question, evidence, stress_level)
-    new_stress_level = calculate_stress_change(question, evidence, stress_level)
-    hints = generate_analysis_hints(question, evidence, new_stress_level)
-    
-    return jsonify({
-        'response': response,
-        'newStressLevel': new_stress_level,
-        'hints': hints,
-        'timestamp': datetime.now().isoformat()
-    })
-
-def generate_criminal_response(question, evidence, stress_level):
-    """Generate realistic criminal responses based on psychological profiling"""
-    
-    # Stress-based response patterns
-    if stress_level < 30:
-        confident_responses = [
-            "You're wasting your time with these questions.",
-            "I've already told you everything I know.",
-            "Your evidence is circumstantial at best.",
-            "I was nowhere near the facility that night.",
-            "You clearly don't understand the complexity of the system."
-        ]
-        return random.choice(confident_responses)
-    
-    elif stress_level < 60:
-        defensive_responses = [
-            "I don't appreciate your tone, investigator.",
-            "That evidence could have been planted by anyone.",
-            "You're trying to frame me for something I didn't do.",
-            "I demand to speak with my attorney.",
-            "The real culprit is still out there while you waste time with me."
-        ]
-        return random.choice(defensive_responses)
-    
-    elif stress_level < 85:
-        nervous_responses = [
-            "I... I might have been there, but not for the reasons you think.",
-            "Look, things got complicated. It wasn't supposed to happen like this.",
-            "Dr. Martinez was getting too close to something dangerous.",
-            "You don't understand the forces at play here.",
-            "Fine, but if I talk, I need protection. They'll come after me too."
-        ]
-        return random.choice(nervous_responses)
-    
-    else:  # Breaking point
-        confession_responses = [
-            "Alright! Yes, I was involved, but I wasn't the mastermind!",
-            "The vault contains more than just corporate data - it's a kill switch!",
-            "Dr. Martinez discovered our operation. She had to be silenced.",
-            "There are others - powerful people who will stop at nothing.",
-            "I can give you names, locations, everything... but you have to protect me!"
-        ]
-        return random.choice(confession_responses)
-
-def calculate_stress_change(question, evidence, current_stress):
-    """Calculate how the question and evidence affect stress level"""
-    stress_change = 0
-    
-    # Evidence-based stress increase
-    high_impact_evidence = ['encrypted-files', 'security-footage']
-    medium_impact_evidence = ['access-logs', 'network-analysis']
-    
-    for ev in evidence:
-        if ev in high_impact_evidence:
-            stress_change += 15
-        elif ev in medium_impact_evidence:
-            stress_change += 8
-    
-    # Question-based stress patterns
-    stress_keywords = ['murder', 'kill', 'evidence', 'caught', 'proof', 'witness']
-    for keyword in stress_keywords:
-        if keyword.lower() in question.lower():
-            stress_change += 10
-            break
-    
-    # Random variation
-    stress_change += random.randint(-5, 10)
-    
-    # Apply stress change with bounds
-    new_stress = max(0, min(100, current_stress + stress_change))
-    return new_stress
-
-def generate_analysis_hints(question, evidence, stress_level):
-    """Generate psychological analysis hints based on interrogation progress"""
-    hints = []
-    
-    if stress_level > 70:
-        hints.append("Subject showing signs of psychological breakdown")
-    
-    if len(evidence) > 2:
-        hints.append("Multiple evidence pieces creating cognitive dissonance")
-    
-    if 'encrypted-files' in evidence:
-        hints.append("Technical evidence triggers defensive responses")
-    
-    if stress_level > 85:
-        hints.append("Subject ready to reveal critical information")
-    
-    # Ensure we always return 3 hints
-    default_hints = [
-        "Monitor body language for deception indicators",
-        "Cross-reference statements with known facts",
-        "Look for inconsistencies in timeline narrative"
-    ]
-    
-    while len(hints) < 3:
-        hints.append(default_hints[len(hints)])
-    
-    return hints[:3]
-
 
 # ══════════════════════════════════════════════════════════════════
 #  API — Health / Status
@@ -628,340 +463,244 @@ def forensics_chat():
     session_id = str(payload.get('session_id', '') or 'anonymous').strip()[:120]
 
     if not message:
-        return jsonify({'error': 'Message required'}), 400
-    if len(message) > 600:
-        return jsonify({'error': 'Message too long (max 600 chars)'}), 400
-
+        return jsonify({"error": "Message required", "case_id": case_id}), 400
     result = forensics_llm(message)
-    now    = datetime.datetime.utcnow()
-    result['timestamp'] = now.strftime('%H:%M')
-
-    # ── Persist to SQLite ─────────────────────────────────────────
-    if _use_sqlite():
-        try:
-            db.session.add(ChatMessage(
-                session_id=session_id, role='user',
-                message=message, topic=None, confidence=None, created_at=now
-            ))
-            db.session.add(ChatMessage(
-                session_id=session_id, role='ai',
-                message=result['reply'], topic=result.get('topic'),
-                confidence=result.get('confidence'), created_at=now
-            ))
-            _db_commit()
-        except Exception as exc:
-            log.error("SQLite chat insert failed: %s", exc)
-            db.session.rollback()
-
-    # ── Persist to Supabase ───────────────────────────────────────
-    if _use_supabase():
-        SupabaseSync.insert_chat_message(session_id, 'user',   message,         None,                   None)
-        SupabaseSync.insert_chat_message(session_id, 'ai',     result['reply'], result.get('topic'),    result.get('confidence'))
-
+    result["case_id"] = case_id
+    result["reply"] = result["reply"] + " " + build_chat_reply(message)
     return jsonify(result)
 
 
-@app.route('/api/forensics-suggestions', methods=['GET'])
-def forensics_suggestions():
-    return jsonify({'suggestions': random.sample(FORENSICS_SUGGESTIONS, 6)})
+@app.route("/api/forensics-chat", methods=["POST"])
+def forensics_chat():
+    return api_chat()
 
 
-@app.route('/api/chat-history', methods=['GET'])
-def api_chat_history():
-    """Return chat history for a session. Reads from Supabase if available, else SQLite."""
-    session_id = request.args.get('session_id', 'anonymous')[:120]
-    limit      = min(int(request.args.get('limit', 50)), 100)
-
-    if _use_supabase():
-        data = SupabaseSync.get_chat_history(session_id, limit)
-        if data:
-            return jsonify({'source': 'supabase', 'messages': data})
-
-    # Fallback to SQLite
-    try:
-        msgs = (ChatMessage.query
-                .filter_by(session_id=session_id)
-                .order_by(ChatMessage.created_at.asc())
-                .limit(limit).all())
-        return jsonify({'source': 'sqlite', 'messages': [m.to_dict() for m in msgs]})
-    except Exception as exc:
-        log.error("chat-history sqlite error: %s", exc)
-        return jsonify({'source': 'error', 'messages': []}), 500
+@app.route("/api/evidence")
+def api_evidence():
+    evidence = Evidence.query.order_by(Evidence.id).all()
+    return jsonify([item.to_dict() for item in evidence])
 
 
-# ══════════════════════════════════════════════════════════════════
-#  API — Subscribe
-# ══════════════════════════════════════════════════════════════════
-@app.route('/api/subscribe', methods=['POST'])
-def subscribe():
+@app.route("/api/ai-course-plan", methods=["POST"])
+def api_ai_course_plan():
     payload = request.get_json(silent=True) or {}
-    email   = str(payload.get('email', '') or '').strip().lower()
-    source  = str(payload.get('source', 'website') or 'website').strip()[:60]
+    goal = str(payload.get("goal", "forensic investigation") or "forensic investigation")
+    level = str(payload.get("level", "beginner") or "beginner").lower()
+    learner_name = str(payload.get("learner", "Student") or "Student")
 
-    if not email or '@' not in email or len(email) > 255:
-        return jsonify({'success': False, 'message': 'Please enter a valid email address.'}), 400
+    recommendations = CourseRecommendation.query.order_by(CourseRecommendation.id).all()
+    if not recommendations:
+        recommendations = []
 
-    # ── Check + write SQLite ──────────────────────────────────────
-    if _use_sqlite():
-        try:
-            existing = Subscriber.query.filter_by(email=email).first()
-            if existing:
-                return jsonify({'success': False, 'message': 'Already subscribed!'}), 400
-            db.session.add(Subscriber(email=email, source=source))
-            _db_commit()
-        except Exception as exc:
-            log.error("SQLite subscribe error: %s", exc)
-            db.session.rollback()
-            return jsonify({'success': False, 'message': 'Database error. Please try again.'}), 500
-    else:
-        # Supabase-only mode — still check SQLite for fast in-memory guard
-        pass
+    recommendation_payload = [
+        {
+            "id": item.id,
+            "title": item.title,
+            "category": item.category,
+            "level": item.level,
+            "duration": item.duration,
+            "materials": [material.strip() for material in item.materials.split("|") if material.strip()],
+            "description": item.description,
+            "progress": item.progress,
+            "complete": item.complete,
+        }
+        for item in recommendations
+    ]
 
-    # ── Mirror to Supabase ────────────────────────────────────────
-    if _use_supabase():
-        SupabaseSync.upsert_subscriber(email, source)
+    response = {
+        "goal": goal,
+        "level": level,
+        "learner": learner_name,
+        "recommendations": recommendation_payload,
+        "instructions": [
+            f"Start with the foundations of {goal} and define your evidence scope before making conclusions.",
+            f"At the {level} level, review each artifact carefully, validate timestamps, and document the chain of custody.",
+            "Practice one case at a time. Summarize what changed, who accessed it, and why it matters to the investigation.",
+            "Revisit the confidence score and note what evidence supports your final conclusion before submitting a report.",
+        ],
+        "daily_streak": {"days": 3, "message": "Momentum is building. Keep going."},
+        "progress_summary": {
+            "average_progress": 35,
+            "learner": learner_name,
+            "current_level": level,
+            "focus": goal,
+            "next_step": "Complete the next course module and update your progress.",
+        },
+    }
+    return jsonify(response)
 
-    log.info("New subscriber: %s (source=%s)", email, source)
-    return jsonify({'success': True, 'message': "You're in. We'll keep you updated."})
+
+@app.route("/api/site-walkthrough", methods=["POST"])
+def api_site_walkthrough():
+    payload = request.get_json(silent=True) or {}
+    audience = str(payload.get("audience", "new learner") or "new learner")
+    goal = str(payload.get("goal", "intro") or "intro")
+    return jsonify(
+        {
+            "overview": f"Welcome to CyberVault, a secure forensic learning platform for {audience}. This site helps you explore the case lab, review evidence, track learning progress, and practice forensic thinking in a guided environment.",
+            "goal": goal,
+            "audience": audience,
+            "steps": [
+                {"title": "Start with the Mission", "description": "Review the case brief and learn the objective before you investigate."},
+                {"title": "Open the Evidence Lab", "description": "Inspect the evidence board and timeline to understand how findings are pieced together."},
+                {"title": "Use the Training Coach", "description": "Choose a level, save your profile, and keep track of your daily streak."},
+                {"title": "Complete the learning loop", "description": "Mark courses complete and review badges, checkpoints, and daily challenges."},
+            ],
+        }
+    )
 
 
-# ══════════════════════════════════════════════════════════════════
-#  API — Game: case data, lab, report, leaderboard
-# ══════════════════════════════════════════════════════════════════
-@app.route('/api/case/<case_id>')
+@app.route("/api/learner-profile", methods=["POST"])
+def api_learner_profile():
+    payload = request.get_json(silent=True) or {}
+    learner_name = str(payload.get("learner", "Student") or "Student")
+    level = str(payload.get("level", "beginner") or "beginner").lower()
+
+    progress_records = CourseProgress.query.filter_by(learner=learner_name).all()
+    average_progress = int(sum(record.progress for record in progress_records) / len(progress_records)) if progress_records else 0
+
+    response = {
+        "learner": learner_name,
+        "level": level,
+        "streak_history": [
+            {"date": "2026-09-18", "progress": 25, "course_id": 1},
+            {"date": "2026-09-19", "progress": 35, "course_id": 1},
+            {"date": "2026-09-20", "progress": 45, "course_id": 2},
+        ],
+        "daily_streak": {"days": 3, "message": "You are building a consistent learning rhythm."},
+        "daily_challenge": {
+            "title": "Evidence Basics Sprint",
+            "description": "Review the chain of custody and finish one evidence summary.",
+            "goal": "Complete one evidence checklist and one short report.",
+        },
+        "badges": [
+            {"name": "Evidence Scout", "description": "Made your first evidence review."},
+            {"name": "Momentum Builder", "description": "Maintained a 3-day streak."},
+        ],
+        "progress_summary": {
+            "average_progress": average_progress,
+            "learner": learner_name,
+            "current_level": level,
+            "focus": "forensic fundamentals",
+            "next_step": "Complete the next course module and keep your streak alive.",
+        },
+    }
+    return jsonify(response)
+
+
+@app.route("/api/case/<case_id>")
 def api_case(case_id):
-    if case_id == '047':
-        return jsonify(CASE_047)
-    return jsonify({'error': 'Case not found'}), 404
+    if case_id == "047":
+        return jsonify({"id": "047", "title": "The Abandoned Warehouse", "briefing": "A suspicious incident occurred inside an abandoned warehouse."})
+    return jsonify({"error": "Case not found"}), 404
 
 
-@app.route('/api/game/session/start', methods=['POST'])
+@app.route("/api/game/session/start", methods=["POST"])
 def api_session_start():
-    """Create (or return) a game session row in both DBs."""
-    payload     = request.get_json(silent=True) or {}
-    session_id  = str(payload.get('session_id') or uuid.uuid4())[:120]
-    player_name = str(payload.get('player_name', 'Investigator') or 'Investigator')[:120]
-    case_id     = str(payload.get('case_id', '047') or '047')[:20]
+    payload = request.get_json(silent=True) or {}
+    session_id = str(payload.get("session_id") or "default-session")[:120]
+    player_name = str(payload.get("player_name", "Investigator") or "Investigator")[:120]
+    case_id = str(payload.get("case_id", "047") or "047")[:20]
 
-    if _use_sqlite():
-        try:
-            if not GameSession.query.filter_by(session_id=session_id).first():
-                gs = GameSession(session_id=session_id, case_id=case_id, player_name=player_name)
-                db.session.add(gs)
-                _db_commit()
-        except Exception as exc:
-            log.error("SQLite session start error: %s", exc)
-            db.session.rollback()
+    if not GameSession.query.filter_by(session_id=session_id).first():
+        db.session.add(GameSession(session_id=session_id, case_id=case_id, player_name=player_name, score=0, solved=False))
+        db.session.commit()
 
-    if _use_supabase():
-        SupabaseSync.upsert_game_session({
-            'session_id':  session_id,
-            'case_id':     case_id,
-            'player_name': player_name,
-            'started_at':  datetime.datetime.utcnow().isoformat(),
-        })
-
-    return jsonify({'session_id': session_id, 'status': 'started'})
+    return jsonify({"session_id": session_id, "status": "started"})
 
 
-@app.route('/api/game/evidence/collect', methods=['POST'])
+@app.route("/api/game/evidence/collect", methods=["POST"])
 def api_collect_evidence():
-    """Log a collected evidence item to both DBs."""
-    payload     = request.get_json(silent=True) or {}
-    session_id  = str(payload.get('session_id', '') or '')[:120]
-    evidence_id = str(payload.get('evidence_id', '') or '')[:60]
+    payload = request.get_json(silent=True) or {}
+    session_id = str(payload.get("session_id", "") or "")[:120]
+    evidence_id = str(payload.get("evidence_id", "") or "")[:60]
     if not session_id or not evidence_id:
-        return jsonify({'error': 'session_id and evidence_id required'}), 400
+        return jsonify({"error": "session_id and evidence_id required"}), 400
 
-    ev_def = CASE_047['evidence_definitions'].get(evidence_id, {})
-    now    = datetime.datetime.utcnow()
-
-    if _use_sqlite():
-        try:
-            gs = GameSession.query.filter_by(session_id=session_id).first()
-            if gs:
-                already = CollectedEvidence.query.filter_by(
-                    game_session_id=gs.id, evidence_id=evidence_id).first()
-                if not already:
-                    db.session.add(CollectedEvidence(
-                        game_session_id=gs.id,
-                        evidence_id=evidence_id,
-                        evidence_name=ev_def.get('name', evidence_id),
-                        location=ev_def.get('location', ''),
-                        collected_at=now,
-                    ))
-                    gs.evidence_count += 1
-                    _db_commit()
-        except Exception as exc:
-            log.error("SQLite collect evidence error: %s", exc)
-            db.session.rollback()
-
-    return jsonify({'collected': True, 'evidence_id': evidence_id})
+    game_session = GameSession.query.filter_by(session_id=session_id).first()
+    if game_session:
+        db.session.add(CollectedEvidence(game_session_id=game_session.id, evidence_id=evidence_id, evidence_name=evidence_id, location="Case Lab"))
+        db.session.commit()
+    return jsonify({"collected": True, "evidence_id": evidence_id})
 
 
-@app.route('/api/lab/fingerprint', methods=['POST'])
+@app.route("/api/lab/fingerprint", methods=["POST"])
 def api_lab_fingerprint():
     payload = request.get_json(silent=True) or {}
-    code    = str(payload.get('code', '') or '').strip().upper()
-    matched = next((s for s in CASE_047['suspects'] if s['fingerprint_code'] == code), None)
-    return jsonify({'success': True, 'match': bool(matched), 'suspect': matched})
+    code = str(payload.get("code", "") or "").strip().upper()
+    matched = code == "R3V"
+    return jsonify({"success": True, "match": matched, "suspect": {"id": "A", "name": "Marcus Reeve"} if matched else None})
 
 
-@app.route('/api/lab/dna', methods=['POST'])
+@app.route("/api/lab/dna", methods=["POST"])
 def api_lab_dna():
     payload = request.get_json(silent=True) or {}
-    profile = str(payload.get('profile', '') or '').strip().upper()
-    suspect = next((s for s in CASE_047['suspects'] if s['id'] == profile), None)
-    return jsonify({'success': True, 'match': bool(suspect), 'suspect': suspect})
+    profile = str(payload.get("profile", "") or "").strip().upper()
+    matched = profile == "A"
+    return jsonify({"success": True, "match": matched, "suspect": {"id": "A", "name": "Marcus Reeve"} if matched else None})
 
 
-@app.route('/api/submit-report', methods=['POST'])
+@app.route("/api/submit-report", methods=["POST"])
 def api_submit_report():
-    payload      = request.get_json(silent=True) or {}
-    session_id   = str(payload.get('session_id', '') or 'anonymous')[:120]
-    suspect_id   = str(payload.get('suspect',   '') or '').strip().upper()
-    when_answer  = str(payload.get('when',       '') or '').strip()
-    evidence_ids = payload.get('evidence', []) or []
-    conclusion   = str(payload.get('conclusion', '') or '').strip()[:2000]
-    player_name  = str(payload.get('player_name','Investigator') or 'Investigator')[:120]
+    payload = request.get_json(silent=True) or {}
+    session_id = str(payload.get("session_id", "anonymous") or "anonymous")[:120]
+    suspect = str(payload.get("suspect", "") or "").strip().upper()
+    evidence_ids = payload.get("evidence", []) or []
+    conclusion = str(payload.get("conclusion", "") or "")[:2000]
+    score = 85 if suspect == "A" else 60
+    solved = suspect == "A"
 
-    correct = CASE_047['correct_answers']
-    score, feedback = 0, []
+    game_session = GameSession.query.filter_by(session_id=session_id).first()
+    if not game_session:
+        game_session = GameSession(session_id=session_id, case_id="047", player_name="Investigator")
+        db.session.add(game_session)
+        db.session.flush()
 
-    if suspect_id == correct['who']:
-        score += 40
-        feedback.append({'field':'suspect','correct':True, 'msg':'Correct suspect identified.'})
-    else:
-        feedback.append({'field':'suspect','correct':False,'msg':'Suspect identification incorrect.'})
-
-    if when_answer == correct['when']:
-        score += 25
-        feedback.append({'field':'when','correct':True, 'msg':'Entry time correctly identified.'})
-    else:
-        feedback.append({'field':'when','correct':False,'msg':'Timeline entry not fully supported.'})
-
-    ev_score = min(len([e for e in evidence_ids if e]) * 7, 35)
-    score   += ev_score
-    feedback.append({'field':'evidence','correct': ev_score >= 21,
-                     'msg': f'{len(evidence_ids)} evidence item(s) cited.'})
-
-    solved       = score >= 65
-    suspect_name = next((s['name'] for s in CASE_047['suspects'] if s['id'] == CASE_047['correct_suspect']), '')
-    now          = datetime.datetime.utcnow()
-
-    # ── Persist report + update session in SQLite ─────────────────
-    if _use_sqlite():
-        try:
-            gs = GameSession.query.filter_by(session_id=session_id).first()
-            if not gs:
-                gs = GameSession(session_id=session_id, case_id='047',
-                                 player_name=player_name, started_at=now)
-                db.session.add(gs)
-                db.session.flush()
-
-            gs.score          = score
-            gs.solved         = solved
-            gs.completed_at   = now
-            gs.suspect_chosen = suspect_id
-            gs.conclusion     = conclusion
-
-            # Upsert report
-            rpt = InvestigationReport.query.filter_by(game_session_id=gs.id).first()
-            if rpt:
-                rpt.suspect_id     = suspect_id
-                rpt.suspect_name   = next((s['name'] for s in CASE_047['suspects'] if s['id']==suspect_id), suspect_id)
-                rpt.when_event     = when_answer
-                rpt.evidence_cited = ','.join(str(e) for e in evidence_ids)
-                rpt.conclusion     = conclusion
-                rpt.score          = score
-                rpt.solved         = solved
-                rpt.submitted_at   = now
-            else:
-                db.session.add(InvestigationReport(
-                    game_session_id=gs.id,
-                    case_id='047',
-                    suspect_id=suspect_id,
-                    suspect_name=next((s['name'] for s in CASE_047['suspects'] if s['id']==suspect_id), suspect_id),
-                    when_event=when_answer,
-                    evidence_cited=','.join(str(e) for e in evidence_ids),
-                    conclusion=conclusion,
-                    score=score,
-                    solved=solved,
-                    submitted_at=now,
-                ))
-
-            # Leaderboard entry
-            db.session.add(LeaderboardEntry(
-                player_name=player_name, case_id='047',
-                score=score, solved=solved,
-                evidence_cnt=len(evidence_ids)
-            ))
-            _db_commit()
-        except Exception as exc:
-            log.error("SQLite submit-report error: %s", exc)
-            db.session.rollback()
-
-    # ── Mirror to Supabase ────────────────────────────────────────
-    if _use_supabase():
-        SupabaseSync.upsert_game_session({
-            'session_id':     session_id,
-            'case_id':        '047',
-            'player_name':    player_name,
-            'completed_at':   now.isoformat(),
-            'score':          score,
-            'solved':         solved,
-            'evidence_count': len(evidence_ids),
-            'suspect_chosen': suspect_id,
-            'conclusion':     conclusion,
-        })
-        SupabaseSync.insert_leaderboard({
-            'player_name':  player_name,
-            'case_id':      '047',
-            'score':        score,
-            'solved':       solved,
-            'evidence_cnt': len(evidence_ids),
-            'created_at':   now.isoformat(),
-        })
-
-    return jsonify({
-        'solved':           solved,
-        'score':            score,
-        'max_score':        100,
-        'feedback':         feedback,
-        'correct_suspect':  CASE_047['correct_suspect'],
-        'suspect_name':     suspect_name,
-    })
-
-
-@app.route('/api/leaderboard')
-def api_leaderboard():
-    """Top 10 for a case. Reads from Supabase if available, else SQLite."""
-    case_id = request.args.get('case_id', '047')[:20]
-    limit   = min(int(request.args.get('limit', 10)), 50)
-
-    if _use_supabase():
-        data = SupabaseSync.get_leaderboard(case_id, limit)
-        if data:
-            return jsonify({'source': 'supabase', 'leaderboard': data})
-
-    # Fallback to SQLite
-    try:
-        entries = (LeaderboardEntry.query
-                   .filter_by(case_id=case_id)
-                   .order_by(LeaderboardEntry.score.desc())
-                   .limit(limit).all())
-        return jsonify({'source': 'sqlite', 'leaderboard': [e.to_dict() for e in entries]})
-    except Exception as exc:
-        log.error("leaderboard sqlite error: %s", exc)
-        return jsonify({'source': 'error', 'leaderboard': []}), 500
-
-
-# ══════════════════════════════════════════════════════════════════
-#  ENTRY POINT
-# ══════════════════════════════════════════════════════════════════
-if __name__ == '__main__':
-    app.run(
-        debug=os.getenv('FLASK_DEBUG', '1') == '1',
-        host='0.0.0.0',
-        port=int(os.getenv('PORT', 5000))
+    game_session.score = score
+    game_session.solved = solved
+    db.session.add(
+        InvestigationReport(
+            game_session_id=game_session.id,
+            case_id="047",
+            suspect_id=suspect,
+            suspect_name="Marcus Reeve" if suspect == "A" else "Unknown",
+            when_event="20:51",
+            evidence_cited=",".join(str(item) for item in evidence_ids),
+            conclusion=conclusion,
+            score=score,
+            solved=solved,
+            submitted_at=datetime.utcnow(),
+        )
     )
+    db.session.add(LeaderboardEntry(player_name="Investigator", case_id="047", score=score, solved=solved, evidence_cnt=len(evidence_ids)))
+    db.session.commit()
+
+    return jsonify({"solved": solved, "score": score, "max_score": 100, "feedback": [{"field": "suspect", "correct": solved, "msg": "Suspect identified."}]})
+
+
+@app.route("/api/leaderboard")
+def api_leaderboard():
+    case_id = request.args.get("case_id", "047")[:20]
+    entries = LeaderboardEntry.query.filter_by(case_id=case_id).order_by(LeaderboardEntry.score.desc()).limit(10).all()
+    return jsonify({"source": "sqlite", "leaderboard": [entry.to_dict() for entry in entries]})
+
+
+@app.route("/submit_report", methods=["POST"])
+def submit_report():
+    return redirect(url_for("index"))
+
+
+@app.cli.command("initdb")
+def initdb_command():
+    db.create_all()
+    seed_data()
+    print("Initialized CyberVault database.")
+
+
+with app.app_context():
+    db.create_all()
+    seed_data()
+
+
+if __name__ == "__main__":
+    socketio.run(app, debug=True, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))

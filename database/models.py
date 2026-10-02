@@ -206,3 +206,53 @@ class LeaderboardEntry(db.Model):
 
     def __repr__(self):
         return f'<LeaderboardEntry {self.player_name} score={self.score}>'
+
+
+class Evidence(db.Model):
+    __tablename__ = 'evidence'
+
+    id = db.Column(db.Integer, primary_key=True)
+    evidence_id = db.Column(db.String(60), nullable=False, unique=True, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    category = db.Column(db.String(80), nullable=False, default='General')
+    source = db.Column(db.String(120), nullable=False, default='Unknown')
+    timestamp = db.Column(db.String(60), nullable=True)
+    observation = db.Column(db.Text, nullable=False)
+    confidence = db.Column(db.Integer, nullable=False, default=0)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'evidence_id': self.evidence_id,
+            'name': self.name,
+            'category': self.category,
+            'source': self.source,
+            'timestamp': self.timestamp,
+            'observation': self.observation,
+            'confidence': self.confidence,
+        }
+
+
+class CourseRecommendation(db.Model):
+    __tablename__ = 'course_recommendations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(80), nullable=False)
+    level = db.Column(db.String(40), nullable=False, default='beginner')
+    duration = db.Column(db.String(40), nullable=False, default='30 mins')
+    description = db.Column(db.Text, nullable=False)
+    materials = db.Column(db.Text, nullable=False)
+    progress = db.Column(db.Integer, nullable=False, default=0)
+    complete = db.Column(db.Boolean, nullable=False, default=False)
+
+
+class CourseProgress(db.Model):
+    __tablename__ = 'course_progress'
+
+    id = db.Column(db.Integer, primary_key=True)
+    learner = db.Column(db.String(120), nullable=False, index=True)
+    course_id = db.Column(db.Integer, nullable=False, default=1)
+    progress = db.Column(db.Integer, nullable=False, default=0)
+    level = db.Column(db.String(40), nullable=False, default='beginner')
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
