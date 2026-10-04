@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYBERVAULT: Ultimate Forensic Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #020305; --glass: rgba(8,12,20,.93); --border: rgba(0,240,255,.28);
+      --cyan: #00f0ff; --uv: #a000ff; --red: #ff2a5f;
+      --yellow: #ffcc00; --green: #00ff88; --amber: #ffb700;
+      --txt: #e6edf3; --muted: #8b949e;
+      --mono: 'JetBrains Mono',monospace; --serif: 'Cinzel',serif; --sans: 'Inter',sans-serif;
+    }
+    *,*::before,*::after { box-sizing:border-box; user-select:none; margin:0; padding:0 }
+    body,html { width:100%; height:100%; overflow:hidden; background:var(--bg); font-family:var(--sans); color:var(--txt) }
+
+    /* ── Canvas ─────────────────────────────────────────────── */
+    #cv { position:absolute; inset:0; z-index:1 }
+    #vig { position:absolute; inset:0; pointer-events:none; z-index:5;
+      background:radial-gradient(circle,transparent 48%,rgba(2,3,5,.88) 100%); transition:background .3s }
+    #vig.uv { background:radial-gradient(circle,rgba(160,0,255,.1) 36%,rgba(18,0,38,.94) 100%) }
+    #xh { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      width:10px; height:10px; border:1.5px solid rgba(255,255,255,.7); border-radius:50%;
+      pointer-events:none; z-index:15; transition:all .18s }
+    #xh.hit { width:22px; height:22px; border-color:var(--cyan); background:rgba(0,240,255,.18) }
+    #pr { position:absolute; top:55%; left:50%; transform:translateX(-50%);
+      background:rgba(0,0,0,.88); border:1px solid var(--cyan); color:var(--cyan);
+      font-family:var(--mono); font-size:.72rem; padding:5px 14px; border-radius:4px;
+      pointer-events:none; z-index:15; display:none; letter-spacing:1px }
+
+    /* ── HUD Header ──────────────────────────────────────────── */
+    #hud { position:absolute; top:14px; left:16px; right:16px; z-index:20;
+      display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;
+      background:var(--glass); border:1px solid var(--border);
+      padding:10px 20px; border-radius:10px; backdrop-filter:blur(12px) }
+    .htitle { font-family:var(--serif); font-size:.92rem; letter-spacing:2px }
+    .tabs { display:flex; gap:6px; flex-wrap:wrap }
+    .tb { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14);
+      color:var(--muted); font-family:var(--mono); font-size:.7rem; padding:5px 11px;
+      border-radius:5px; cursor:pointer; transition:all .2s }
+    .tb:hover { border-color:rgba(0,240,255,.4); color:var(--cyan) }
+    .tb.on { background:rgba(0,240,255,.14); border-color:var(--cyan); color:var(--cyan); font-weight:600 }
+    .hkeys { font-family:var(--mono); font-size:.67rem; display:flex; gap:9px; flex-wrap:wrap }
+    .kb { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
+      padding:2px 6px; border-radius:3px; color:var(--cyan) }
+    .hlink { font-size:.68rem; font-family:var(--mono); color:var(--muted); text-decoration:none;
+      border:1px solid rgba(255,255,255,.1); padding:3px 10px; border-radius:18px; white-space:nowrap }
+    .hlink:hover { color:var(--cyan); border-color:var(--cyan) }
+
+    /* ── Glass panel base ────────────────────────────────────── */
+    .gp { position:absolute; z-index:20; background:var(--glass); border:1px solid var(--border);
+      border-radius:10px; backdrop-filter:blur(12px); display:flex; flex-direction:column }
+    .sl { font-size:.66rem; font-family:var(--mono); color:var(--muted);
+      text-transform:uppercase; letter-spacing:1.5px; flex-shrink:0 }
+
+    /* ── Left panel: evidence + inventory ───────────────────── */
+    #lp { top:78px; left:16px; width:280px; max-height:calc(100vh - 100px); padding:14px; gap:10px }
+    .ot { background:rgba(0,240,255,.05); border:1px solid rgba(0,240,255,.2);
+      border-radius:5px; padding:8px 11px; font-size:.78rem; color:var(--cyan);
+      display:flex; justify-content:space-between; align-items:center; flex-shrink:0 }
+    .pbw { background:rgba(255,255,255,.07); border-radius:8px; height:4px; overflow:hidden; flex-shrink:0 }
+    .pbf { height:100%; background:var(--cyan); border-radius:8px; width:0%; transition:width .4s }
+    #evl { display:flex; flex-direction:column; gap:7px; overflow-y:auto; max-height:200px; scrollbar-width:thin }
+    .ei { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);
+      border-left:3px solid var(--cyan); border-radius:4px; padding:7px 9px; font-size:.73rem }
+    .ei.uv { border-left-color:var(--uv); background:rgba(160,0,255,.05) }
+    .ei strong { display:block; color:#fff; margin-bottom:2px }
+    #invbar { display:flex; gap:6px; flex-shrink:0 }
+    .is { width:46px; height:46px; background:rgba(0,0,0,.5); border:1px dashed rgba(255,255,255,.18);
+      border-radius:5px; display:flex; justify-content:center; align-items:center;
+      font-size:1.1rem; transition:all .3s; cursor:default; position:relative }
+    .is.on { border-style:solid; border-color:var(--cyan); background:rgba(0,240,255,.09) }
+
+    /* ── Right panel: radar + decoder ───────────────────────── */
+    #rp { top:78px; right:16px; width:268px; padding:14px; gap:11px }
+    #radarC { border-radius:6px; width:100%; height:160px; display:block }
+    #decoder { background:rgba(0,0,0,.6); border:1px solid rgba(0,240,255,.2); border-radius:5px;
+      padding:10px; font-family:var(--mono); font-size:.69rem; color:var(--yellow); line-height:1.7 }
+    #decoder input { background:transparent; border:none; border-bottom:1px solid var(--yellow);
+      color:var(--yellow); font-family:var(--mono); font-size:.69rem; width:100%; outline:none; margin-top:4px }
+
+    /* ── AI Chatbot ──────────────────────────────────────────── */
+    #aip { bottom:16px; right:16px; width:340px; height:310px; padding:12px; gap:7px; z-index:25 }
+    #chatlog { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:7px;
+      font-size:.78rem; padding-right:4px; scrollbar-width:thin }
+    .cm { padding:8px 11px; border-radius:6px; max-width:88%; line-height:1.45; word-break:break-word }
+    .cm.bot { background:rgba(0,240,255,.09); border:1px solid rgba(0,240,255,.25);
+      color:var(--txt); align-self:flex-start }
+    .cm.usr { background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.18);
+      color:#fff; align-self:flex-end }
+    .cir { display:flex; gap:6px; flex-shrink:0 }
+    .ci { flex:1; background:#000; border:1px solid var(--border); color:#fff;
+      padding:7px 10px; font-family:var(--sans); font-size:.78rem; border-radius:4px; outline:none }
+    .ci:focus { border-color:var(--cyan) }
+    .cs { background:var(--cyan); border:none; color:#000; padding:7px 12px;
+      font-weight:700; font-size:.72rem; border-radius:4px; cursor:pointer }
+
+    /* ── Full-screen overlays ────────────────────────────────── */
+    .overlay { position:absolute; top:78px; left:16px; right:16px; bottom:16px;
+      background:var(--glass); border:1px solid var(--border); border-radius:12px;
+      z-index:50; display:none; flex-direction:column; backdrop-filter:blur(16px); padding:22px; gap:16px }
+    .ovh { font-family:var(--serif); font-size:1.25rem; color:var(--cyan);
+      border-bottom:1px solid rgba(0,240,255,.2); padding-bottom:10px;
+      display:flex; justify-content:space-between; align-items:center; flex-shrink:0 }
+    .xcb { background:var(--cyan); color:#000; border:none; padding:7px 16px;
+      font-weight:700; font-size:.74rem; border-radius:4px; cursor:pointer }
+
+    /* ── Mind Map ─────────────────────────────────────────────── */
+    #mmSvg { flex:1; border-radius:8px; background:rgba(0,0,0,.45); overflow:hidden }
+    .mm-node { cursor:pointer }
+    .mm-node:hover circle { filter:brightness(1.3) }
+
+    /* ── Dossier layout ──────────────────────────────────────── */
+    #dossier-body { flex:1; overflow-y:auto; display:grid; grid-template-columns:1fr 1fr; gap:16px; scrollbar-width:thin }
+    .dos-card { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:16px }
+    .dos-card h4 { font-family:var(--serif); color:var(--cyan); font-size:.92rem; margin-bottom:8px }
+    .dos-card p, .dos-card li { font-size:.78rem; line-height:1.6; color:var(--muted) }
+    .dos-card strong { color:var(--txt) }
+    .redacted { background:rgba(255,255,255,.85); color:rgba(255,255,255,.85);
+      border-radius:2px; padding:0 3px; font-size:.78rem; cursor:help }
+    .redacted:hover { background:var(--red); color:#fff }
+    .rating-bar { display:flex; gap:4px; margin-top:6px }
+    .rb { width:18px; height:18px; border-radius:3px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15) }
+    .rb.on { background:var(--cyan); border-color:var(--cyan) }
+    .rb.warn { background:var(--yellow); border-color:var(--yellow) }
+    .rb.bad  { background:var(--red); border-color:var(--red) }
+    /* workbench */
+    #wb-slots { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap }
+    .wb-slot { width:52px; height:52px; background:rgba(0,0,0,.5);
+      border:1px dashed rgba(255,255,255,.2); border-radius:6px;
+      display:flex; justify-content:center; align-items:center; font-size:1.2rem;
+      cursor:pointer; transition:all .2s }
+    .wb-slot:hover { border-color:var(--cyan); background:rgba(0,240,255,.08) }
+    .wb-slot.sel { border-style:solid; border-color:var(--yellow); background:rgba(255,204,0,.1) }
+    #wb-result { margin-top:10px; font-size:.78rem; color:var(--green); font-family:var(--mono); min-height:1.2em }
+
+    /* ── Keypad modal ────────────────────────────────────────── */
+    #km { position:absolute; inset:0; background:rgba(0,0,0,.88);
+      z-index:101; display:none; justify-content:center; align-items:center; backdrop-filter:blur(8px) }
+    .kpb { background:var(--glass); border:1px solid var(--yellow); border-radius:12px;
+      padding:22px; width:300px; text-align:center; box-shadow:0 0 30px rgba(255,204,0,.18) }
+    .kpb h4 { font-family:var(--serif); color:var(--yellow); font-size:.88rem; margin-bottom:12px; letter-spacing:2px }
+    .kpd { background:#000; border:1px solid var(--yellow); color:var(--yellow);
+      font-family:var(--mono); font-size:1.4rem; padding:10px; margin-bottom:14px;
+      border-radius:5px; letter-spacing:6px }
+    .kpg { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px }
+    .kk { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); color:#fff;
+      font-family:var(--mono); font-size:1rem; padding:10px; border-radius:5px; cursor:pointer; transition:all .2s }
+    .kk:hover { background:rgba(255,204,0,.18); border-color:var(--yellow) }
+    #kperr { color:var(--red); font-family:var(--mono); font-size:.74rem; margin-bottom:8px; min-height:1.1em }
+    .kfw { grid-column:span 3 }
+
+    /* ── Level-complete banner ───────────────────────────────── */
+    #lcb { position:absolute; bottom:24px; left:50%;
+      transform:translateX(-50%) translateY(60px);
+      background:rgba(0,255,136,.1); border:1px solid var(--green);
+      border-radius:8px; padding:12px 24px; text-align:center; z-index:30;
+      font-family:var(--mono); font-size:.8rem; color:var(--green);
+      transition:transform .4s, opacity .4s; opacity:0; pointer-events:none }
+    #lcb.show { transform:translateX(-50%) translateY(0); opacity:1; pointer-events:auto }
+    .nb { background:var(--green); color:#000; border:none; border-radius:5px;
+      padding:6px 16px; font-weight:700; font-size:.74rem; cursor:pointer; margin-top:8px; display:block; width:100% }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="cv"></div>
+<div id="vig"></div>
+<div id="xh"></div>
+<div id="pr">[CLICK] EXAMINE</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="htitle" id="htitle">LEVEL 1 — SURGICAL VAULT</div>
+  <div class="tabs">
+    <button class="tb on" id="tb-game"    onclick="switchView('game',this)">3D VIEW</button>
+    <button class="tb"    id="tb-mindmap" onclick="switchView('mindmap',this)">MIND MAP</button>
+    <button class="tb"    id="tb-dossier" onclick="switchView('dossier',this)">DOSSIER</button>
+  </div>
+  <div class="hkeys">
+    <span><span class="kb">F</span> UV</span>
+    <span><span class="kb">DRAG</span> ORBIT</span>
+    <span><span class="kb">CLICK</span> INSPECT</span>
+    <span><span class="kb">ESC</span> CLOSE</span>
+  </div>
+  <a class="hlink" href="/">← HOME</a>
+</div>
+
+<!-- Left panel -->
+<div id="lp" class="gp">
+  <div class="sl">Objectives</div>
+  <div>
+    <div class="ot"><span>Clues found</span><strong id="cc">0 / 3</strong></div>
+    <div class="pbw"><div class="pbf" id="pb"></div></div>
+  </div>
+  <div class="sl">Evidence Log</div>
+  <div id="evl"><div id="en" style="color:var(--muted);font-size:.72rem;">Toggle UV [F] or click objects to find clues…</div></div>
+  <div class="sl">Inventory</div>
+  <div id="invbar">
+    <div class="is" id="s0" title="empty">—</div>
+    <div class="is" id="s1" title="empty">—</div>
+    <div class="is" id="s2" title="empty">—</div>
+    <div class="is" id="s3" title="empty">—</div>
+  </div>
+</div>
+
+<!-- Right panel: radar + decoder -->
+<div id="rp" class="gp">
+  <div class="sl">Radar Mini-Map</div>
+  <canvas id="radarC" width="240" height="158"></canvas>
+  <div class="sl">Hex Decoder Terminal</div>
+  <div id="decoder">
+    STREAM: <span id="hexStream">38 30 34 31</span><br>
+    DECODED: <span id="hexDecoded" style="color:var(--green);">8041</span><br>
+    <span style="color:var(--muted);">Enter hex to decode:</span><br>
+    <input id="hexIn" placeholder="e.g. 41 72 69 73" onkeydown="if(event.key==='Enter') decodeHex()"/>
+  </div>
+</div>
+
+<!-- AI Chatbot -->
+<div id="aip" class="gp">
+  <div class="sl" style="color:var(--cyan);">🤖 AI Forensic Assistant</div>
+  <div id="chatlog">
+    <div class="cm bot">Greetings, Investigator. I am your forensic AI. Ask me for hints, clue decodes, suspect analysis, or case summaries.</div>
+  </div>
+  <div class="cir">
+    <input class="ci" id="ci" placeholder="Ask anything about the case…"
+           onkeydown="if(event.key==='Enter') sendChat()"/>
+    <button class="cs" onclick="sendChat()">SEND</button>
+  </div>
+</div>
+
+<!-- Level complete -->
+<div id="lcb">
+  <div>✓ ALL CLUES SECURED</div>
+  <button class="nb" id="nbtn" onclick="advanceLevel()">ADVANCE →</button>
+</div>
+
+<!-- ═══ MIND MAP OVERLAY ═══ -->
+<div class="overlay" id="ov-mindmap">
+  <div class="ovh">
+    <span>EVIDENCE CONNECTOR BOARD</span>
+    <button class="xcb" onclick="switchView('game',document.getElementById('tb-game'))">CLOSE [ESC]</button>
+  </div>
+  <svg id="mmSvg" viewBox="0 0 900 500" preserveAspectRatio="xMidYMid meet"></svg>
+</div>
+
+<!-- ═══ DOSSIER OVERLAY ═══ -->
+<div class="overlay" id="ov-dossier">
+  <div class="ovh">
+    <span>CONFIDENTIAL CASE DOSSIER</span>
+    <button class="xcb" onclick="switchView('game',document.getElementById('tb-game'))">CLOSE [ESC]</button>
+  </div>
+  <div id="dossier-body">
+
+    <!-- Case summary -->
+    <div class="dos-card">
+      <h4>CASE FILE #9042-VAULT</h4>
+      <p><strong>Status:</strong> <span style="color:var(--yellow)">ACTIVE INVESTIGATION</span></p>
+      <p><strong>Facility:</strong> Decommissioned Cyber-Vault — Sector B</p>
+      <p><strong>Incident:</strong> Unauthorised bio-cybernetic extraction at approx. 0200 hrs</p>
+      <p style="margin-top:8px;background:rgba(255,255,255,.04);padding:10px;border-radius:5px;font-family:var(--mono);font-size:.7rem;">
+        "Subject entered via override at 0200. UV traces in B4–B9. Keypad forensic sequence required for full access."
+      </p>
+    </div>
+
+    <!-- Suspect profiles -->
+    <div class="dos-card">
+      <h4>SUSPECT — DR. ARIS THORNE</h4>
+      <p><strong>Age:</strong> 42 &nbsp; <strong>Status:</strong> <span style="color:var(--red)">AT LARGE</span></p>
+      <p><strong>Background:</strong> Dismissed cybersec researcher, neural-implant specialist</p>
+      <p><strong>Last known:</strong> <span class="redacted" title="CLASSIFIED">CLASSIFIED</span></p>
+      <p><strong>Link to case:</strong> Handwriting matches UV cipher; keypad logs show ID</p>
+    </div>
+
+    <!-- Redacted file -->
+    <div class="dos-card">
+      <h4>REDACTED INTELLIGENCE FILE</h4>
+      <ul style="margin-left:14px;margin-top:6px">
+        <li>Operation codename: <span class="redacted" title="hover to reveal">VAULT PHANTOM</span></li>
+        <li>Target: <span class="redacted" title="hover to reveal">NEURAL ARCHIVE DB</span></li>
+        <li>Method: <span class="redacted" title="hover to reveal">BIO-CHIP EXTRACTION</span></li>
+        <li>Clearance required: <span class="redacted" title="hover to reveal">LEVEL 9 — DIRECTOR</span></li>
+      </ul>
+    </div>
+
+    <!-- Performance rating -->
+    <div class="dos-card">
+      <h4>INVESTIGATION RATING</h4>
+      <p>Clues discovered:</p>
+      <div class="rating-bar" id="ratingBar"></div>
+      <p style="margin-top:10px;">Grade: <strong id="ratingGrade" style="color:var(--cyan)">—</strong></p>
+
+      <h4 style="margin-top:14px;">ITEM WORKBENCH</h4>
+      <p>Select two items to combine:</p>
+      <div id="wb-slots"></div>
+      <div id="wb-result"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Keypad modal -->
+<div id="km">
+  <div class="kpb">
+    <h4>⌨ KEYPAD OVERRIDE</h4>
+    <div class="kpd" id="kpd">_ _ _ _</div>
+    <div id="kperr"></div>
+    <div class="kpg">
+      <button class="kk" onclick="kp('1')">1</button><button class="kk" onclick="kp('2')">2</button><button class="kk" onclick="kp('3')">3</button>
+      <button class="kk" onclick="kp('4')">4</button><button class="kk" onclick="kp('5')">5</button><button class="kk" onclick="kp('6')">6</button>
+      <button class="kk" onclick="kp('7')">7</button><button class="kk" onclick="kp('8')">8</button><button class="kk" onclick="kp('9')">9</button>
+      <button class="kk" onclick="kpClr()">CLR</button><button class="kk" onclick="kp('0')">0</button><button class="kk" onclick="kpSubmit()">OK</button>
+    </div>
+    <button class="kk kfw" onclick="closeKP()">CANCEL</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   AUDIO ENGINE
+═══════════════════════════════════════════════════════════ */
+const A = {
+  ctx: null,
+  init() { if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this._drone(); } },
+  _t(freq, type, dur, vol=.08, d=0) {
+    if (!this.ctx) return;
+    const o=this.ctx.createOscillator(), g=this.ctx.createGain();
+    o.type=type; o.frequency.value=freq;
+    const t=this.ctx.currentTime+d;
+    g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.001,t+dur);
+    o.connect(g); g.connect(this.ctx.destination); o.start(t); o.stop(t+dur);
+  },
+  click()   { this._t(800,'sine',.05,.04); },
+  uv()      { this._t(1200,'triangle',.14,.07); this._t(900,'triangle',.14,.05,.06); },
+  clue()    { [523,659,784].forEach((f,i)=>this._t(f,'sine',.18,.1,i*.1)); },
+  beep()    { this._t(1000,'square',.07,.03); },
+  err()     { this._t(220,'sawtooth',.12,.06); },
+  unlock()  { [400,600,900].forEach((f,i)=>this._t(f,'sine',.25,.12,i*.12)); },
+  _drone() {
+    const o=this.ctx.createOscillator(), g=this.ctx.createGain(), f=this.ctx.createBiquadFilter();
+    o.type='sawtooth'; o.frequency.value=55; f.type='lowpass'; f.frequency.value=110;
+    g.gain.value=.015; o.connect(f); f.connect(g); g.connect(this.ctx.destination); o.start();
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   LEVEL DATA
+═══════════════════════════════════════════════════════════ */
+const LEVELS = {
+  1: {
+    title:'LEVEL 1 — SURGICAL VAULT', code:'8041',
+    clues:{
+      'L1A':{ name:'Surgical Recline Table', desc:'Hydraulic table — Type O− stains confirmed by luminol. Restraint grooves still visible.', item:{icon:'🩺',label:'Scalpel'} },
+      'L1B':{ name:'Fluorescent Wall Code', desc:'UV: scratch-code [ 8-0-4-1 ]. Phosphorescent compound — surgical-grade. Handwriting: Dr. A. Thorne.', uvOnly:true },
+      'L1C':{ name:'Keypad Vault Exit', desc:'4-digit blast-door lock. Burn marks suggest prior forced override.', isKeypad:true }
+    },
+    mindmap:[
+      { id:'ev1', x:140, y:140, r:46, col:'#00f0ff', label:'Surgical\nTable', sub:'EVD-L1-A' },
+      { id:'ev2', x:450, y:280, r:52, col:'#ff2a5f', label:'Dr. Thorne', sub:'SUSPECT' },
+      { id:'ev3', x:760, y:140, r:46, col:'#a000ff', label:'UV Cipher\n8041',   sub:'EVD-L1-B' },
+      { id:'ev4', x:450, y:100, r:40, col:'#ffcc00', label:'Vault Door', sub:'EVD-L1-C' }
+    ],
+    edges:[ [0,1],[1,2],[1,3],[0,3] ]
+  },
+  2: {
+    title:'LEVEL 2 — OVERGROWN CORRIDOR', code:'1994',
+    clues:{
+      'L2A':{ name:'Vine Pillar', desc:'Mutated roots fused with live conduits (48V). Encrypted module QK-7703 wedged inside.', item:{icon:'💾',label:'Memory Module'} },
+      'L2B':{ name:'Bio-Handprints', desc:'UV: glowing handprints → scratched code [ 1-9-9-4 ].', uvOnly:true },
+      'L2C':{ name:'Corridor Gate', desc:'Forced from inside. Log: Thorne, A — 03:14 AM.', isKeypad:true }
+    },
+    mindmap:[
+      { id:'m1', x:160, y:160, r:46, col:'#00ff88', label:'Vine\nPillar',  sub:'EVD-L2-A' },
+      { id:'m2', x:450, y:280, r:52, col:'#ff2a5f', label:'Dr. Thorne', sub:'SUSPECT' },
+      { id:'m3', x:740, y:160, r:46, col:'#a000ff', label:'Handprint\n1994', sub:'EVD-L2-B' },
+      { id:'m4', x:450, y:100, r:40, col:'#ffcc00', label:'Corridor\nGate',  sub:'EVD-L2-C' }
+    ],
+    edges:[ [0,1],[1,2],[1,3],[2,3] ]
+  },
+  3: {
+    title:'LEVEL 3 — SAFEHOUSE KITCHEN', code:'3307',
+    clues:{
+      'L3A':{ name:'Safehouse Table', desc:'Warm mugs — occupant fled ≤90 min ago. Palm print on mug handle.', item:{icon:'🧪',label:'NRX-7 Solvent'} },
+      'L3B':{ name:'UV Ledger', desc:'UV ink: "Transfer complete — code 3307 — rendezvous at Vault B."', uvOnly:true },
+      'L3C':{ name:'Kitchen Passage', desc:'Service door with hidden modern lock — cabinet disguise.', isKeypad:true }
+    },
+    mindmap:[
+      { id:'k1', x:160, y:200, r:46, col:'#ffb700', label:'Kitchen\nTable',   sub:'EVD-L3-A' },
+      { id:'k2', x:450, y:300, r:52, col:'#ff2a5f', label:'Dr. Thorne', sub:'SUSPECT' },
+      { id:'k3', x:740, y:200, r:46, col:'#a000ff', label:'UV Ledger\n3307',  sub:'EVD-L3-B' },
+      { id:'k4', x:450, y:80,  r:40, col:'#ffcc00', label:'Kitchen\nPassage', sub:'EVD-L3-C' }
+    ],
+    edges:[ [0,1],[1,2],[1,3],[0,3] ]
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   ENGINE STATE
+═══════════════════════════════════════════════════════════ */
+let scene, camera, renderer, controls, raycaster, mouse;
+let iObjs=[], hObj=null, aLvl=1, uvMode=false, kpBuf='';
+let dust, inventory=[];
+const found = {1:new Set(), 2:new Set(), 3:new Set()};
+const maxC  = 3;
+let wbSelected = [];
+
+/* ═══════════════════════════════════════════════════════════
+   THREE.JS BOOTSTRAP
+═══════════════════════════════════════════════════════════ */
+(function boot(){
+  const con = document.getElementById('cv');
+  scene    = new THREE.Scene();
+  camera   = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 100);
+  camera.position.set(0,1.7,5.5);
+
+  renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+  renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  con.appendChild(renderer.domElement);
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping=true; controls.dampingFactor=0.05;
+  controls.maxPolarAngle=Math.PI/2-.01; controls.minDistance=1.2; controls.maxDistance=9;
+
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2(0,0);
+
+  // dust
+  const pg=new THREE.BufferGeometry(), pp=new Float32Array(200*3);
+  for(let i=0;i<200*3;i+=3){ pp[i]=(Math.random()-.5)*12; pp[i+1]=Math.random()*4.5; pp[i+2]=(Math.random()-.5)*12; }
+  pg.setAttribute('position', new THREE.BufferAttribute(pp,3));
+  dust=new THREE.Points(pg, new THREE.PointsMaterial({color:0x88aacc,size:.025,transparent:true,opacity:.28}));
+
+  window.addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+  window.addEventListener('click',   onCvClick);
+  window.addEventListener('keydown', onKey);
+
+  loadLevel(1);
+  loop();
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   SCENE HELPERS
+═══════════════════════════════════════════════════════════ */
+function m(o){ return new THREE.MeshStandardMaterial(o); }
+function bm(o){ return new THREE.MeshBasicMaterial(o); }
+function add(g,mat,px,py,pz,rx,ry,rz){
+  const mesh=new THREE.Mesh(g,mat);
+  if(px!==undefined) mesh.position.set(px,py,pz);
+  if(rx!==undefined) mesh.rotation.set(rx,ry,rz);
+  mesh.castShadow=mesh.receiveShadow=true;
+  scene.add(mesh); return mesh;
+}
+function I(mesh,id){ mesh.userData.cid=id; iObjs.push(mesh); return mesh; }
+function L(T,col,int,dist,x,y,z){
+  const l=new T(col,int,dist); if(x!==undefined) l.position.set(x,y,z);
+  if(T===THREE.SpotLight){ l.castShadow=true; l.shadow.mapSize.set(512,512); }
+  scene.add(l); return l;
+}
+function clr(){ while(scene.children.length) scene.remove(scene.children[0]); iObjs=[]; }
+
+function loadLevel(n){
+  aLvl=n; clr(); hideLCB();
+  const def=LEVELS[n];
+  document.getElementById('htitle').innerText = def.title;
+  scene.background=new THREE.Color(0x040609);
+  scene.fog=new THREE.FogExp2(0x040609,.08);
+  camera.position.set(0,1.7,5.5); controls.target.set(0,1.2,0);
+  scene.add(dust);
+  scene.add(new THREE.AmbientLight(0x101520,.4));
+  buildVault1();
+  updateUI(); buildMindMap(); buildDossier();
+}
+function advanceLevel(){ if(aLvl<3) loadLevel(aLvl+1); }
+
+function buildVault1(){
+  L(THREE.SpotLight, 0xaaccff,4.0,0, 0,4.5,.5);
+  L(THREE.PointLight, 0xff1133,1.2,9, -4,2.5,-4);
+
+  // floor + grid
+  add(new THREE.PlaneGeometry(12,12), m({color:0x101520,roughness:.3,metalness:.22}), 0,0,0, -Math.PI/2,0,0);
+  scene.add(new THREE.GridHelper(12,24,0x00f0ff,0x162030));
+
+  // walls
+  const wm=m({color:0x0d1218,roughness:.85});
+  add(new THREE.PlaneGeometry(12,6),wm, 0,3,-6);
+  add(new THREE.PlaneGeometry(12,6),wm, -6,3,0, 0,Math.PI/2,0);
+  add(new THREE.PlaneGeometry(12,6),wm,  6,3,0, 0,-Math.PI/2,0);
+
+  // table
+  add(new THREE.CylinderGeometry(.4,.5,.65,16), m({color:0x222a38,metalness:.85,roughness:.2}), 0,.325,0);
+  const top=add(new THREE.BoxGeometry(1.3,.1,2.6), m({color:0x3a4a5e,metalness:.6,roughness:.28}), 0,.7,0);
+  I(top,'L1A');
+  // chalk
+  const ck=new THREE.Mesh(new THREE.PlaneGeometry(.85,1.9),bm({color:0xffffff,transparent:true,opacity:.3,wireframe:true}));
+  ck.rotation.x=-Math.PI/2; ck.position.set(0,.755,0); scene.add(ck);
+
+  // lamp
+  const lamp=add(new THREE.CylinderGeometry(.75,.85,.22,24), m({color:0x4a5a72,metalness:.92,roughness:.1}), 0,4.1,.5);
+  I(lamp,'L1B');
+  add(new THREE.CylinderGeometry(.04,.04,1.2), m({color:0x333d4a,metalness:.8}), 0,4.7,.5);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.6,.035,8,48),bm({color:0xaaccff,transparent:true,opacity:.42}));
+  ring.position.set(0,4.0,.5); scene.add(ring);
+
+  // UV cipher (hidden mesh — visible only when UV is on)
+  const uvc=new THREE.Mesh(new THREE.PlaneGeometry(1.6,.7),bm({color:0xcc00ff,transparent:true,opacity:.0}));
+  uvc.position.set(-2,2,-5.9); I(uvc,'L1B'); scene.add(uvc);
+
+  // keypad gate
+  const gate=add(new THREE.BoxGeometry(2.0,3.0,.12), m({color:0x2a3a2a,metalness:.7,emissive:0x004400,emissiveIntensity:.15}), 0,1.5,-5.9);
+  I(gate,'L1C');
+  const led=new THREE.Mesh(new THREE.SphereGeometry(.04),bm({color:0xff0000}));
+  led.position.set(.3,2.0,-5.83); scene.add(led);
+
+  // server racks
+  for(let i=0;i<2;i++){
+    add(new THREE.BoxGeometry(.8,2.2,.5), m({color:0x0d1825,metalness:.8}), 4.8+i,1.1,-4.5);
+    for(let j=0;j<6;j++){
+      const l=new THREE.Mesh(new THREE.SphereGeometry(.03),bm({color:j%3===0?0x00ff88:0xff2a5f}));
+      l.position.set(4.8+i+.32,.3+j*.32,-4.23); scene.add(l);
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INTERACTION
+═══════════════════════════════════════════════════════════ */
+function onKey(e){
+  A.init();
+  if(e.key==='f'||e.key==='F') toggleUV();
+  if(e.key==='Escape'){ closeKP(); switchView('game',document.getElementById('tb-game')); }
+}
+function onCvClick(){
+  A.init(); A.click();
+  if(!hObj) return;
+  const cid=hObj.userData.cid;
+  const cl=LEVELS[aLvl].clues[cid];
+  if(!cl) return;
+  if(cl.uvOnly && !uvMode) return;
+  if(cl.isKeypad){ openKP(); return; }
+  showInspect(cid);
+}
+
+function showInspect(cid){
+  const cl=LEVELS[aLvl].clues[cid];
+  // Show a non-blocking HUD toast instead of alert()
+  showToast(`[${cid}] ${cl.name}`, cl.desc);
+  if(!found[aLvl].has(cid)){
+    found[aLvl].add(cid); A.clue();
+    if(cl.item) pickupItem(cl.item);
+    updateUI(); buildMindMap(); buildDossier();
+    if(found[aLvl].size===maxC) onLevelComplete();
+  }
+}
+
+function toggleUV(){
+  uvMode=!uvMode; A.uv();
+  document.getElementById('vig').className = uvMode?'uv':'';
+  iObjs.forEach(o=>{
+    const cl=LEVELS[aLvl].clues[o.userData.cid];
+    if(cl&&cl.uvOnly) o.material.opacity = uvMode?.82:.0;
+  });
+  dust.material.color.set(uvMode?0xcc00ff:0x88aacc);
+  dust.material.opacity = uvMode?.55:.28;
+  document.getElementById('xh').style.borderColor = uvMode?'rgba(160,0,255,.8)':'rgba(255,255,255,.7)';
+}
+
+function pickupItem(it){
+  inventory.push(it);
+  const idx=inventory.length-1;
+  const sl=document.getElementById('s'+idx);
+  if(sl){ sl.innerText=it.icon; sl.className='is on'; sl.title=it.label; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYPAD
+═══════════════════════════════════════════════════════════ */
+function openKP(){ kpBuf=''; updKPD(); document.getElementById('kperr').innerText=''; document.getElementById('km').style.display='flex'; }
+function closeKP(){ document.getElementById('km').style.display='none'; }
+function kp(n){ if(kpBuf.length<4){ kpBuf+=n; A.beep(); updKPD(); } }
+function kpClr(){ kpBuf=''; A.beep(); updKPD(); document.getElementById('kperr').innerText=''; }
+function updKPD(){
+  const s=kpBuf.padEnd(4,'_').split('').join(' ');
+  document.getElementById('kpd').innerText=s;
+}
+function kpSubmit(){
+  if(kpBuf===LEVELS[aLvl].code){
+    A.unlock(); closeKP();
+    const cid=Object.keys(LEVELS[aLvl].clues).find(k=>LEVELS[aLvl].clues[k].isKeypad);
+    if(cid&&!found[aLvl].has(cid)){
+      found[aLvl].add(cid); updateUI(); buildMindMap(); buildDossier();
+      if(found[aLvl].size===maxC) onLevelComplete();
+    } else if(aLvl<3){ loadLevel(aLvl+1); }
+  } else {
+    A.err();
+    document.getElementById('kperr').innerText='✗ ACCESS DENIED';
+    document.getElementById('kpd').innerText='ERROR';
+    setTimeout(()=>{ kpBuf=''; updKPD(); document.getElementById('kperr').innerText=''; },900);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST NOTIFICATION (replaces alert())
+═══════════════════════════════════════════════════════════ */
+function showToast(title, body){
+  const t=document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+    background:rgba(8,12,20,.97);border:1px solid var(--cyan);border-radius:8px;
+    padding:14px 20px;max-width:420px;z-index:200;font-size:.8rem;line-height:1.5;
+    box-shadow:0 0 20px rgba(0,240,255,.15);transition:opacity .3s`;
+  t.innerHTML=`<strong style="color:var(--cyan);display:block;margin-bottom:4px">${title}</strong>${body}`;
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300); },4000);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEVEL COMPLETE
+═══════════════════════════════════════════════════════════ */
+function onLevelComplete(){
+  const nb=document.getElementById('nbtn');
+  nb.style.display = aLvl<3?'block':'none';
+  nb.innerText = aLvl<3?`ADVANCE TO LEVEL ${aLvl+1} →`:'🏆 INVESTIGATION COMPLETE';
+  document.getElementById('lcb').classList.add('show');
+}
+function hideLCB(){ document.getElementById('lcb').classList.remove('show'); }
+
+/* ═══════════════════════════════════════════════════════════
+   UI UPDATE
+═══════════════════════════════════════════════════════════ */
+function updateUI(){
+  const n=found[aLvl].size;
+  document.getElementById('cc').innerText=`${n} / ${maxC}`;
+  document.getElementById('pb').style.width=`${(n/maxC)*100}%`;
+  const list=document.getElementById('evl'); list.innerHTML='';
+  if(n===0){ list.innerHTML='<div id="en" style="color:var(--muted);font-size:.72rem;">Toggle UV [F] or click objects to find clues…</div>'; return; }
+  found[aLvl].forEach(cid=>{
+    const cl=LEVELS[aLvl].clues[cid]; if(!cl) return;
+    const d=document.createElement('div'); d.className='ei'+(cl.uvOnly?' uv':'');
+    d.innerHTML=`<strong>${cl.name}</strong>${cl.desc.slice(0,80)}…`;
+    list.appendChild(d);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VIEW SWITCHING
+═══════════════════════════════════════════════════════════ */
+function switchView(view, btnEl){
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  if(btnEl) btnEl.classList.add('on');
+  document.getElementById('ov-mindmap').style.display = view==='mindmap'?'flex':'none';
+  document.getElementById('ov-dossier').style.display = view==='dossier'?'flex':'none';
+  // show/hide 3D HUD elements
+  const show3d = view==='game';
+  ['lp','rp','aip','xh','pr','vig','lcb'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.visibility = show3d?'visible':'hidden';
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MIND MAP — dynamic SVG builder
+═══════════════════════════════════════════════════════════ */
+function buildMindMap(){
+  const svg=document.getElementById('mmSvg');
+  const lvl=LEVELS[aLvl];
+  const nodes=lvl.mindmap, edges=lvl.edges;
+  const n=found[aLvl].size;
+
+  let html='';
+  // background grid
+  html+=`<defs><pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0L0 0 0 30" fill="none" stroke="rgba(0,240,255,.07)" stroke-width="1"/></pattern></defs>`;
+  html+=`<rect width="900" height="500" fill="url(#grid)"/>`;
+
+  // edges — draw only if both endpoints "discovered" (or always show for discovered suspect)
+  edges.forEach(([a,b])=>{
+    const na=nodes[a], nb=nodes[b];
+    html+=`<line x1="${na.x}" y1="${na.y}" x2="${nb.x}" y2="${nb.y}"
+      stroke="#ff2a5f" stroke-width="2" stroke-dasharray="6 3" opacity=".6"/>`;
+  });
+
+  // nodes
+  nodes.forEach((node,idx)=>{
+    const discovered = idx===1 || found[aLvl].size>0; // suspect always visible
+    const opacity = discovered?'1':'.25';
+    const lines = node.label.split('\n');
+    html+=`<g class="mm-node" opacity="${opacity}">
+      <circle cx="${node.x}" cy="${node.y}" r="${node.r}" fill="rgba(8,12,20,.85)" stroke="${node.col}" stroke-width="2"/>
+      <circle cx="${node.x}" cy="${node.y}" r="${node.r+6}" fill="none" stroke="${node.col}" stroke-width=".5" opacity=".35"/>
+      ${lines.map((l,i)=>`<text x="${node.x}" y="${node.y - (lines.length-1)*7 + i*14}" fill="${node.col}" font-size="11" text-anchor="middle" font-family="JetBrains Mono,monospace">${l}</text>`).join('')}
+      <text x="${node.x}" y="${node.y+node.r+14}" fill="rgba(255,255,255,.4)" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">${node.sub}</text>
+    </g>`;
+  });
+
+  // legend
+  html+=`<rect x="10" y="460" width="160" height="32" rx="4" fill="rgba(0,0,0,.5)"/>
+    <text x="18" y="478" fill="rgba(0,240,255,.7)" font-size="10" font-family="JetBrains Mono,monospace">● NODE = EVIDENCE / SUSPECT</text>
+    <text x="18" y="490" fill="rgba(255,42,95,.7)"  font-size="10" font-family="JetBrains Mono,monospace">- - RED THREAD = LINK</text>`;
+
+  // clue count badge
+  html+=`<rect x="800" y="10" width="90" height="28" rx="4" fill="rgba(0,240,255,.1)" stroke="rgba(0,240,255,.3)"/>
+    <text x="845" y="29" fill="#00f0ff" font-size="11" text-anchor="middle" font-family="JetBrains Mono,monospace">${found[aLvl].size}/${maxC} CLUES</text>`;
+
+  svg.innerHTML=html;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DOSSIER — rating + workbench
+═══════════════════════════════════════════════════════════ */
+function buildDossier(){
+  // rating bar
+  const rb=document.getElementById('ratingBar'); rb.innerHTML='';
+  const rg=document.getElementById('ratingGrade');
+  for(let i=0;i<maxC;i++){
+    const b=document.createElement('div');
+    b.className='rb'+(i<found[aLvl].size?' on':'');
+    rb.appendChild(b);
+  }
+  const n=found[aLvl].size;
+  rg.innerText = n===3?'S — EXPERT':n===2?'A — SKILLED':n===1?'B — DEVELOPING':'C — NOVICE';
+  rg.style.color = n===3?'var(--green)':n===2?'var(--cyan)':n===1?'var(--yellow)':'var(--red)';
+
+  // workbench
+  const ws=document.getElementById('wb-slots'); ws.innerHTML='';
+  document.getElementById('wb-result').innerText='';
+  wbSelected=[];
+  if(inventory.length===0){
+    ws.innerHTML='<span style="color:var(--muted);font-size:.73rem;">No items in inventory yet.</span>';
+    return;
+  }
+  inventory.forEach((it,i)=>{
+    const sl=document.createElement('div');
+    sl.className='wb-slot'; sl.innerText=it.icon; sl.title=it.label;
+    sl.onclick=()=>wbSelect(i, sl, it);
+    ws.appendChild(sl);
+  });
+}
+
+function wbSelect(idx, el, item){
+  if(wbSelected.find(s=>s.idx===idx)){
+    wbSelected=wbSelected.filter(s=>s.idx!==idx);
+    el.classList.remove('sel');
+  } else if(wbSelected.length<2){
+    wbSelected.push({idx,item}); el.classList.add('sel');
+  }
+  if(wbSelected.length===2) wbCombine();
+}
+
+function wbCombine(){
+  const labels=wbSelected.map(s=>s.item.label).sort().join('+');
+  const combos = {
+    'Memory Module+Scalpel': '🔓 Neural Archive Key — unlocks Vault B access panel!',
+    'NRX-7 Solvent+Scalpel': '🧫 Forensic Sample Processed — DNA trace confirmed.',
+    'Memory Module+NRX-7 Solvent': '💉 Encrypted Drive Cleaned — file recovery: 87% complete.',
+  };
+  const result = combos[labels] || '❓ No reaction. Try a different combination.';
+  document.getElementById('wb-result').innerText = result;
+  A.clue();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HEX DECODER
+═══════════════════════════════════════════════════════════ */
+function decodeHex(){
+  const raw = document.getElementById('hexIn').value.trim();
+  if(!raw){ return; }
+  try {
+    const bytes = raw.split(/\s+/).map(h=>parseInt(h,16));
+    if(bytes.some(isNaN)){ document.getElementById('hexDecoded').innerText='[INVALID HEX]'; return; }
+    const decoded = bytes.map(b=>String.fromCharCode(b)).join('');
+    document.getElementById('hexStream').innerText = raw.toUpperCase();
+    document.getElementById('hexDecoded').innerText = decoded;
+    A.beep();
+    // also push to AI chat as auto-analysis
+    appendChat('🔍 Auto-decoded: "'+decoded+'"','bot');
+  } catch(e){
+    document.getElementById('hexDecoded').innerText='[ERROR]';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RADAR RENDERER
+═══════════════════════════════════════════════════════════ */
+let radarAngle=0;
+function drawRadar(){
+  const c=document.getElementById('radarC');
+  if(!c) return;
+  const ctx=c.getContext('2d');
+  const W=c.width, H=c.height, cx=W/2, cy=H/2, R=Math.min(W,H)/2-8;
+  ctx.clearRect(0,0,W,H);
+
+  // background
+  ctx.fillStyle='rgba(0,0,0,.85)'; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
+
+  // grid rings
+  [.25,.5,.75,1].forEach(f=>{
+    ctx.strokeStyle=`rgba(0,240,255,${f*.18+.06})`; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(cx,cy,R*f,0,Math.PI*2); ctx.stroke();
+  });
+
+  // cross-hairs
+  ctx.strokeStyle='rgba(0,240,255,.15)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(cx-R,cy); ctx.lineTo(cx+R,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,cy-R); ctx.lineTo(cx,cy+R); ctx.stroke();
+
+  // rotating sweep line
+  radarAngle+=.025;
+  const grad=ctx.createConicalGradient?null:null; // fallback
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(radarAngle);
+  const sg=ctx.createLinearGradient(0,0,R,0);
+  sg.addColorStop(0,'rgba(0,240,255,.0)');
+  sg.addColorStop(1,'rgba(0,240,255,.45)');
+  ctx.strokeStyle='rgba(0,240,255,.7)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(R,0); ctx.stroke();
+  // sweep arc fade
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.arc(0,0,R,-0.8,0,false);
+  ctx.closePath();
+  ctx.fillStyle='rgba(0,240,255,.05)';
+  ctx.fill();
+  ctx.restore();
+
+  // room outline (simplified L-shape)
+  ctx.strokeStyle='rgba(0,240,255,.5)'; ctx.lineWidth=1.5;
+  ctx.strokeRect(cx-R*.85,cy-R*.85,R*1.7,R*1.7);
+
+  // door markers
+  ctx.fillStyle='rgba(255,204,0,.8)';
+  ctx.fillRect(cx-3, cy-R*.85-2, 6, 4);   // top
+  ctx.fillRect(cx+R*.85-2, cy-3, 4, 6);   // right
+
+  // clue blips (pulse based on time)
+  const blips=[{x:.3,y:-.4,found:found[aLvl].has('L1A')||found[aLvl].has('L2A')||found[aLvl].has('L3A')},
+               {x:-.4,y:.3,found:found[aLvl].has('L1B')||found[aLvl].has('L2B')||found[aLvl].has('L3B')},
+               {x: .0,y:-.7,found:found[aLvl].has('L1C')||found[aLvl].has('L2C')||found[aLvl].has('L3C')}];
+  blips.forEach(b=>{
+    const bx=cx+b.x*R, by=cy+b.y*R;
+    const pulse=.5+.5*Math.sin(Date.now()*.004);
+    ctx.fillStyle=b.found?`rgba(0,255,136,${.6+pulse*.4})`:`rgba(255,42,95,${.5+pulse*.4})`;
+    ctx.beginPath(); ctx.arc(bx,by,4,0,Math.PI*2); ctx.fill();
+    if(!b.found){
+      ctx.strokeStyle=`rgba(255,42,95,${.3*pulse})`; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(bx,by,4+8*pulse,0,Math.PI*2); ctx.stroke();
+    }
+  });
+
+  // player blip
+  ctx.fillStyle='#00ff88';
+  ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#00ff88'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(cx,cy,9,0,Math.PI*2); ctx.stroke();
+
+  // direction indicator
+  const camYaw=controls?controls.getAzimuthalAngle():0;
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(camYaw);
+  ctx.strokeStyle='rgba(0,255,136,.9)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-14); ctx.stroke();
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AI FORENSIC CHATBOT
+═══════════════════════════════════════════════════════════ */
+const AI_KB = [
+  { keys:['hint','help','stuck'],
+    reply:'Try toggling UV light with [F] — hidden fluorescent clues only appear under blacklight. Look along the walls.' },
+  { keys:['code','passcode','password','number'],
+    reply:'Clue: switch to UV mode and inspect the rear wall closely. The code is scratched in phosphorescent compound — current level code: '+()=>LEVELS[aLvl].code+'.' },
+  { keys:['uv','blacklight','ultraviolet','fluorescent'],
+    reply:'Press [F] to toggle UV Blacklight. UV-only evidence is invisible in white-light mode and glows purple/cyan under UV.' },
+  { keys:['suspect','thorne','who','killer'],
+    reply:'Dr. Aris Thorne — dismissed cybersecurity researcher. Neural-implant specialist. Last authenticated on vault keypad at 03:14 AM. Handwriting matches UV wall cipher.' },
+  { keys:['keypad','door','lock','code','override'],
+    reply:'Find the UV cipher first — it reveals the 4-digit code. Enter it at the glowing keypad door to advance.' },
+  { keys:['inventory','item','collect','pickup'],
+    reply:'Interactive objects with 🩺/💾/🧪 icons add items to your inventory. Combine items in the Dossier workbench for bonus discoveries.' },
+  { keys:['workbench','combine','craft'],
+    reply:'Open the DOSSIER tab → find the Item Workbench. Select two collected items to attempt a combination reaction.' },
+  { keys:['mindmap','mind map','board','connect'],
+    reply:'Open the MIND MAP tab for the evidence connector board — nodes show evidence and suspects linked with red-thread lines.' },
+  { keys:['radar','map','minimap','blip'],
+    reply:'The Radar mini-map (right panel) shows your position, clue blips (red = undiscovered, green = found), and door locations.' },
+  { keys:['hex','decode','decoder','cipher'],
+    reply:'Use the Hex Decoder (right panel) — type hex bytes separated by spaces (e.g. "38 30 34 31") to decode ASCII messages.' },
+  { keys:['dossier','file','report','case'],
+    reply:'Open DOSSIER for suspect profiles, redacted intel files, your investigation performance grade, and the item workbench.' },
+  { keys:['level','advance','next','progress'],
+    reply:'Find all 3 clues in a level, then enter the correct 4-digit keypad code to unlock the exit and advance to the next level.' },
+];
+
+function generateAIReply(query){
+  const q=query.toLowerCase();
+  // dynamic code lookup
+  if(q.includes('code')||q.includes('passcode')){
+    return `Clue: Switch to UV mode [F] and scan the rear wall. The passcode for this level is hidden in fluorescent inscription. Current level: L${aLvl}.`;
+  }
+  for(const kb of AI_KB){
+    if(kb.keys.some(k=>q.includes(k))) return kb.reply;
+  }
+  return `Forensic AI online. Clues found in Level ${aLvl}: ${found[aLvl].size}/${maxC}. Try asking about 'UV light', 'suspects', 'keypad', 'inventory', or 'hints'.`;
+}
+
+function sendChat(){
+  const inp=document.getElementById('ci');
+  const txt=inp.value.trim(); if(!txt) return;
+  inp.value='';
+  appendChat(txt,'usr');
+  setTimeout(()=>appendChat(generateAIReply(txt),'bot'),420);
+}
+
+function appendChat(msg,who){
+  const log=document.getElementById('chatlog');
+  const d=document.createElement('div'); d.className='cm '+who; d.innerText=msg;
+  log.appendChild(d); log.scrollTop=log.scrollHeight;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER LOOP
+═══════════════════════════════════════════════════════════ */
+let _t=0;
+function loop(){
+  requestAnimationFrame(loop); _t+=.016;
+  controls.update();
+  dust.rotation.y+=.0004;
+  drawRadar();
+
+  raycaster.setFromCamera(mouse, camera);
+  const hits=raycaster.intersectObjects(iObjs);
+  const xhEl=document.getElementById('xh'), prEl=document.getElementById('pr');
+
+  if(hits.length>0){
+    const obj=hits[0].object;
+    const cid=obj.userData.cid;
+    const cl=LEVELS[aLvl].clues[cid];
+    if(cl?.uvOnly&&!uvMode){ hObj=null; xhEl.className=''; prEl.style.display='none'; }
+    else {
+      hObj=obj; xhEl.className='hit'; prEl.style.display='block';
+      prEl.innerText=cl?.isKeypad?'[CLICK] KEYPAD':'[CLICK] '+cl?.name;
+    }
+  } else { hObj=null; xhEl.className=''; prEl.style.display='none'; }
+
+  renderer.render(scene, camera);
+}
+</script>
+</body>
+</html>

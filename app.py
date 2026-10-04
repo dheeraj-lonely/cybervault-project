@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import random
+import logging
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -12,6 +13,9 @@ from sqlalchemy import text
 load_dotenv()
 
 app = Flask(__name__)
+log = logging.getLogger("cybervault")
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s — %(message)s")
+DB_MODE = os.getenv("DB_MODE", "sqlite")
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "evidence-lot-secret-2024")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +35,8 @@ from database.models import (  # noqa: E402
     Subscriber,
     db,
 )
+
+from database.supabase_client import is_supabase_configured, SupabaseSync  # noqa: E402
 
 db.init_app(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -208,29 +214,6 @@ def handle_disconnect():
                 rooms.pop(room_name, None)
             emit("room_state", get_room_snapshot(room_name), room=room_name)
 
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-
-@app.route("/game")
-def game_page():
-    return render_template("game.html")
-
-
-@app.route("/courses")
-def courses_page():
-    return render_template("courses.html")
-
-
-@app.route("/api/status")
-def api_status():
-    return jsonify({
-        "status": "ok",
-        "sqlite": {"connected": True, "path": _SQLITE_PATH},
-        "supabase": {"configured": False, "connected": False},
-    })
 
 
 def build_forensic_ai_reply(question):
@@ -412,6 +395,56 @@ def game():
     return render_template('game.html')
 
 
+@app.route('/cybervault-3d')
+def cybervault_3d():
+    return render_template('cybervault-3d.html')
+
+
+@app.route('/cybervault-advanced')
+def cybervault_advanced():
+    return render_template('cybervault-advanced.html')
+
+
+@app.route('/cybervault-horror')
+def cybervault_horror():
+    return render_template('cybervault-horror.html')
+
+
+@app.route('/ai-terminal')
+def ai_terminal():
+    return render_template('ai-terminal.html')
+
+
+@app.route('/cybervault-multiplayer')
+def cybervault_multiplayer():
+    return render_template('cybervault-multiplayer.html')
+
+
+@app.route('/cybervault-forensic')
+def cybervault_forensic():
+    return render_template('cybervault-forensic.html')
+
+
+@app.route('/cybervault-levels')
+def cybervault_levels():
+    return render_template('cybervault-levels.html')
+
+
+@app.route('/cybervault-ultimate')
+def cybervault_ultimate():
+    return render_template('cybervault-ultimate.html')
+
+
+@app.route('/cybervault-dashboard')
+def cybervault_dashboard():
+    return render_template('cybervault-dashboard.html')
+
+
+@app.route('/cybervault-fp')
+def cybervault_fp():
+    return render_template('cybervault-fp.html')
+
+
 # ══════════════════════════════════════════════════════════════════
 #  API — Health / Status
 # ══════════════════════════════════════════════════════════════════
@@ -468,11 +501,6 @@ def forensics_chat():
     result["case_id"] = case_id
     result["reply"] = result["reply"] + " " + build_chat_reply(message)
     return jsonify(result)
-
-
-@app.route("/api/forensics-chat", methods=["POST"])
-def forensics_chat():
-    return api_chat()
 
 
 @app.route("/api/evidence")
