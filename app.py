@@ -7,7 +7,14 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, url_for
-from flask_socketio import SocketIO, emit, join_room, leave_room
+try:
+    from flask_socketio import SocketIO, emit, join_room, leave_room
+    _HAS_SOCKETIO = True
+except Exception:
+    _HAS_SOCKETIO = False
+    def emit(*a, **kw): pass
+    def join_room(*a, **kw): pass
+    def leave_room(*a, **kw): pass
 from sqlalchemy import text
 
 load_dotenv()
@@ -36,10 +43,19 @@ from database.models import (  # noqa: E402
     db,
 )
 
-from database.supabase_client import is_supabase_configured, SupabaseSync  # noqa: E402
+try:
+    from database.supabase_client import is_supabase_configured, SupabaseSync  # noqa: E402
+except Exception:
+    is_supabase_configured = lambda: False
+    class SupabaseSync:
+        @staticmethod
+        def ping(): return False
 
 db.init_app(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+if _HAS_SOCKETIO:
+    socketio = SocketIO(app, cors_allowed_origins="*")
+else:
+    socketio = None
 rooms = {}
 
 
@@ -372,14 +388,17 @@ CASE_047 = {
 
 
 # ══════════════════════════════════════════════════════════════════
-#  APP STARTUP — initialise SQLite tables
+#  APP STARTUP — initialise SQLite tables (wrapped for Vercel read-only FS)
 # ══════════════════════════════════════════════════════════════════
-with app.app_context():
-    db.create_all()
-    log.info("SQLite tables verified at %s", _SQLITE_PATH)
-    sb_status = "✓ configured" if is_supabase_configured() else "✗ not configured (using SQLite fallback)"
-    log.info("Supabase: %s", sb_status)
-    log.info("DB_MODE : %s", DB_MODE)
+try:
+    with app.app_context():
+        db.create_all()
+        log.info("SQLite tables verified at %s", _SQLITE_PATH)
+        sb_status = "✓ configured" if is_supabase_configured() else "✗ not configured (using SQLite fallback)"
+        log.info("Supabase: %s", sb_status)
+        log.info("DB_MODE : %s", DB_MODE)
+except Exception as exc:
+    log.warning("Database init skipped (likely read-only FS / Vercel): %s", exc)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -680,10 +699,11 @@ def initdb_command():
     print("Initialized CyberVault database.")
 
 
-with app.app_context():
-    db.create_all()
-    seed_data()
-
-
 if __name__ == "__main__":
+    try:
+        with app.app_context():
+            db.create_all()
+            seed_data()
+    except Exception as exc:
+        log.warning("Seed data skipped: %s", exc)
     socketio.run(app, debug=True, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))

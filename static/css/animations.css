@@ -1,0 +1,226 @@
+/* ═══════════════════════════════════════════════════════════════
+   CyberVault — Animations CSS
+   Scroll reveals, count-up, hero effects, cursor, particles
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Reveal Animations ────────────────────────────────────────── */
+.reveal-left, .reveal-right, .reveal-up {
+  opacity: 0;
+  transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1);
+}
+.reveal-left  { transform: translateX(-50px); }
+.reveal-right { transform: translateX(50px); }
+.reveal-up    { transform: translateY(40px); }
+
+.reveal-left.is-visible, .reveal-right.is-visible, .reveal-up.is-visible {
+  opacity: 1;
+  transform: translate(0,0);
+}
+
+/* ── Hero scanline ────────────────────────────────────────────── */
+.hero-layer-scan {
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+}
+.hero-layer-scan::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(74,158,255,.4), transparent);
+  animation: scan-line 4s linear infinite;
+}
+@keyframes scan-line {
+  0%   { top: -2px; }
+  100% { top: 100%; }
+}
+
+/* ── Hero evidence markers ────────────────────────────────────── */
+.hero-ev-marker {
+  position: absolute; width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(74,158,255,.12); border: 1.5px solid rgba(74,158,255,.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .65rem; font-weight: 700; color: #4a9eff;
+  cursor: pointer; transition: all .3s; z-index: 5;
+  animation: marker-pulse 2.5s ease-in-out infinite;
+}
+.hero-ev-marker:hover {
+  background: rgba(74,158,255,.25); border-color: #4a9eff;
+  transform: scale(1.15); box-shadow: 0 0 16px rgba(74,158,255,.4);
+}
+@keyframes marker-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(74,158,255,.3); }
+  50%     { box-shadow: 0 0 0 8px rgba(74,158,255,0); }
+}
+
+/* ── Hero particles ───────────────────────────────────────────── */
+.hero-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.hero-particle {
+  position: absolute; width: 2px; height: 2px; border-radius: 50%;
+  background: rgba(74,158,255,.5); animation: float-up linear infinite;
+}
+@keyframes float-up {
+  0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+  10%  { opacity: .8; transform: scale(1); }
+  90%  { opacity: .3; }
+  100% { transform: translateY(-10vh) scale(0); opacity: 0; }
+}
+
+/* ── Scroll cue ────────────────────────────────────────────────── */
+.hero-scroll-cue { animation: scroll-bounce 2s ease-in-out infinite; }
+@keyframes scroll-bounce {
+  0%,100% { transform: translateY(0); opacity: .6; }
+  50%     { transform: translateY(8px); opacity: 1; }
+}
+.scroll-mouse {
+  width: 22px; height: 36px; border: 2px solid rgba(74,158,255,.4);
+  border-radius: 12px; margin: 0 auto 6px; position: relative;
+}
+.scroll-wheel {
+  width: 3px; height: 8px; background: #4a9eff; border-radius: 2px;
+  position: absolute; left: 50%; top: 6px; transform: translateX(-50%);
+  animation: wheel-down 2s ease-in-out infinite;
+}
+@keyframes wheel-down {
+  0%   { top: 6px; opacity: 1; }
+  100% { top: 18px; opacity: 0; }
+}
+
+/* ── Custom cursor ─────────────────────────────────────────────── */
+#cv-cursor-ring {
+  position: fixed; top: 0; left: 0; width: 32px; height: 32px;
+  border: 1.5px solid rgba(74,158,255,.4); border-radius: 50%;
+  pointer-events: none; z-index: 9999; transform: translate(-50%,-50%);
+  transition: transform .12s ease, border-color .2s, width .2s, height .2s;
+  mix-blend-mode: screen;
+}
+#cv-cursor-dot {
+  position: fixed; top: 0; left: 0; width: 5px; height: 5px;
+  background: #4a9eff; border-radius: 50%;
+  pointer-events: none; z-index: 9999; transform: translate(-50%,-50%);
+  transition: transform .05s linear;
+}
+
+/* ── Count-up animation ────────────────────────────────────────── */
+.count-up { display: inline-block; }
+
+/* ── Nav shrink on scroll ──────────────────────────────────────── */
+.cv-nav { transition: padding .3s, background .3s, box-shadow .3s; }
+.cv-nav.scrolled {
+  padding-top: 6px; padding-bottom: 6px;
+  background: rgba(5,8,12,.95);
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+}
+
+/* ── Feature card hover line ───────────────────────────────────── */
+.feat-line {
+  height: 2px; width: 0; background: #4a9eff; border-radius: 1px;
+  transition: width .4s ease; margin-top: 12px;
+}
+.feat-card:hover .feat-line { width: 100%; }
+
+/* ── Case card glow ─────────────────────────────────────────────── */
+.case-card-glow {
+  position: absolute; inset: -2px; border-radius: 14px; z-index: -1;
+  background: linear-gradient(135deg, rgba(74,158,255,.15), transparent 40%, rgba(74,158,255,.08));
+  filter: blur(8px); opacity: .6;
+  animation: glow-shift 5s ease-in-out infinite;
+}
+@keyframes glow-shift {
+  0%,100% { opacity: .4; }
+  50%     { opacity: .7; }
+}
+
+/* ── Game preview card scan ────────────────────────────────────── */
+.gpc-scan {
+  position: absolute; inset: 0; overflow: hidden; border-radius: 8px;
+}
+.gpc-scan::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(74,158,255,.5), transparent);
+  animation: scan-line 3s linear infinite;
+}
+.gpc-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(74,158,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74,158,255,.04) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.gpc-light {
+  position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
+  width: 80%; height: 70%; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(74,158,255,.12) 0%, transparent 70%);
+  animation: light-flicker 4s ease-in-out infinite;
+}
+@keyframes light-flicker {
+  0%,100% { opacity: .7; }
+  45%     { opacity: .9; }
+  50%     { opacity: .5; }
+  55%     { opacity: .85; }
+}
+
+/* ── AI status dot ──────────────────────────────────────────────── */
+.aic-status-dot, .chat-live-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #00ff88;
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,255,136,.5); }
+  50%     { box-shadow: 0 0 0 6px rgba(0,255,136,0); }
+}
+
+/* ── Lab card bar fill ──────────────────────────────────────────── */
+.lpc-fill {
+  transition: width 1s ease .3s;
+}
+
+/* ── How-step connector ────────────────────────────────────────── */
+.hs-connector {
+  height: 2px; flex: 1;
+  background: linear-gradient(90deg, rgba(74,158,255,.3), rgba(74,158,255,.05));
+  margin: 0 4px;
+}
+
+/* ── Workflow strip arrows ──────────────────────────────────────── */
+.wf-arrow { animation: arrow-slide 2s ease-in-out infinite; }
+@keyframes arrow-slide {
+  0%,100% { transform: translateX(0); opacity: .5; }
+  50%     { transform: translateX(3px); opacity: 1; }
+}
+
+/* ── Hamburger menu ─────────────────────────────────────────────── */
+.cv-hamburger { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 6px; }
+.cv-hamburger span { width: 22px; height: 2px; background: #4a9eff; border-radius: 2px; transition: all .3s; }
+.cv-hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+.cv-hamburger.open span:nth-child(2) { opacity: 0; }
+.cv-hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+
+@media (max-width: 768px) {
+  .cv-hamburger { display: flex; }
+  .cv-nav-links {
+    position: fixed; top: 60px; right: -100%; width: 240px; height: calc(100vh - 60px);
+    background: rgba(5,8,12,.98); flex-direction: column; padding: 20px; gap: 12px;
+    transition: right .3s ease;
+  }
+  .cv-nav-links.open { right: 0; }
+}
+
+/* ── Scroll top button ──────────────────────────────────────────── */
+.cv-scroll-top {
+  position: fixed; bottom: 20px; right: 20px; width: 44px; height: 44px;
+  border-radius: 50%; border: 1px solid rgba(74,158,255,.3);
+  background: rgba(5,8,12,.9); color: #4a9eff; font-size: 1.2rem;
+  cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: translateY(20px); transition: all .3s;
+}
+.cv-scroll-top.visible { opacity: 1; transform: translateY(0); }
+.cv-scroll-top:hover { background: rgba(74,158,255,.15); border-color: #4a9eff; }
+
+/* ── Smooth scroll ──────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+/* ── Reduced motion ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+  .reveal-left, .reveal-right, .reveal-up { opacity: 1; transform: none; }
+}
