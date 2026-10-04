@@ -390,59 +390,14 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/game')
-def game():
-    return render_template('game.html')
-
-
-@app.route('/cybervault-3d')
-def cybervault_3d():
-    return render_template('cybervault-3d.html')
-
-
-@app.route('/cybervault-advanced')
-def cybervault_advanced():
-    return render_template('cybervault-advanced.html')
+@app.route('/cybervault-fp')
+def cybervault_fp():
+    return render_template('cybervault-fp.html')
 
 
 @app.route('/cybervault-horror')
 def cybervault_horror():
     return render_template('cybervault-horror.html')
-
-
-@app.route('/ai-terminal')
-def ai_terminal():
-    return render_template('ai-terminal.html')
-
-
-@app.route('/cybervault-multiplayer')
-def cybervault_multiplayer():
-    return render_template('cybervault-multiplayer.html')
-
-
-@app.route('/cybervault-forensic')
-def cybervault_forensic():
-    return render_template('cybervault-forensic.html')
-
-
-@app.route('/cybervault-levels')
-def cybervault_levels():
-    return render_template('cybervault-levels.html')
-
-
-@app.route('/cybervault-ultimate')
-def cybervault_ultimate():
-    return render_template('cybervault-ultimate.html')
-
-
-@app.route('/cybervault-dashboard')
-def cybervault_dashboard():
-    return render_template('cybervault-dashboard.html')
-
-
-@app.route('/cybervault-fp')
-def cybervault_fp():
-    return render_template('cybervault-fp.html')
 
 
 # ══════════════════════════════════════════════════════════════════

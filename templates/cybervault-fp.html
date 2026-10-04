@@ -3,183 +3,193 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>CYBERVAULT — First Person Crime Scene</title>
+<title>CYBERVAULT — Crime Scene Investigation</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Cinzel:wght@700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#020305;--glass:rgba(6,10,18,.92);--border:rgba(0,240,255,.26);
-  --cyan:#00f0ff;--uv:#bb00ff;--red:#ff2a5f;--yellow:#ffcc00;--green:#00ff88;--amber:#ffb700;
-  --txt:#e6edf3;--muted:#8b949e;
-  --mono:'JetBrains Mono',monospace;--serif:'Cinzel',serif;
-}
+:root{--bg:#020305;--glass:rgba(6,10,18,.88);--border:rgba(0,240,255,.25);
+--cyan:#00f0ff;--uv:#bb00ff;--red:#ff2a5f;--yellow:#ffcc00;--green:#00ff88;--amber:#ffb700;
+--txt:#e6edf3;--muted:#8b949e;--mono:'JetBrains Mono',monospace;--serif:'Cinzel',serif}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--mono);color:var(--txt)}
-
-/* ── canvas ── */
-#cv{position:absolute;inset:0;z-index:1;cursor:crosshair}
-
-/* ── vignette ── */
+#cv{position:absolute;inset:0;z-index:1}
 #vig{position:absolute;inset:0;pointer-events:none;z-index:4;
-  background:radial-gradient(ellipse 70% 60% at 50% 50%,transparent 40%,rgba(2,3,5,.82) 100%);
-  transition:background .4s}
-#vig.uv{background:radial-gradient(ellipse 65% 55% at 50% 50%,rgba(80,0,120,.12) 0%,rgba(14,0,30,.94) 100%)}
+background:radial-gradient(ellipse 75% 65% at 50% 50%,transparent 38%,rgba(2,3,5,.75) 100%);transition:background .4s}
+#vig.uv{background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(80,0,120,.1) 0%,rgba(10,0,20,.9) 100%)}
+#xh{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:10px;height:10px;
+border:1.5px solid rgba(255,255,255,.55);border-radius:50%;pointer-events:none;z-index:15;transition:all .15s}
+#xh.hit{width:22px;height:22px;border-color:var(--cyan);background:rgba(0,240,255,.15)}
+#xh.uv-hit{width:22px;height:22px;border-color:var(--uv);background:rgba(160,0,255,.15)}
+#ap{position:absolute;top:54%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);
+border:1px solid var(--cyan);color:var(--cyan);font-size:.7rem;padding:4px 13px;border-radius:4px;
+pointer-events:none;z-index:15;display:none;letter-spacing:1px}
+.gp{position:absolute;z-index:20;background:var(--glass);border:1px solid var(--border);
+border-radius:10px;backdrop-filter:blur(10px);display:flex;flex-direction:column}
+.sl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;flex-shrink:0}
 
-/* ── torch cone ── */
-#torch{position:absolute;inset:0;pointer-events:none;z-index:3;
-  background:radial-gradient(ellipse 45% 40% at 50% 50%,rgba(255,255,240,.06) 0%,transparent 70%);
-  opacity:0;transition:opacity .3s}
-#torch.on{opacity:1}
-#torch.uv-on{background:radial-gradient(ellipse 45% 40% at 50% 50%,rgba(160,0,255,.18) 0%,transparent 70%)}
-
-/* ── crosshair ── */
-#xh{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:12px;height:12px;border:1.5px solid rgba(255,255,255,.6);border-radius:50%;
-  pointer-events:none;z-index:15;transition:all .15s}
-#xh.hit{width:24px;height:24px;border-color:var(--cyan);background:rgba(0,240,255,.15);box-shadow:0 0 8px rgba(0,240,255,.5)}
-#xh.uv-hit{width:24px;height:24px;border-color:var(--uv);background:rgba(160,0,255,.15)}
-
-/* ── action prompt ── */
-#ap{position:absolute;top:54%;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,.85);border:1px solid var(--cyan);color:var(--cyan);
-  font-size:.72rem;padding:5px 14px;border-radius:4px;
-  pointer-events:none;z-index:15;display:none;letter-spacing:1px;
-  box-shadow:0 0 12px rgba(0,240,255,.2)}
-
-/* ── HUD ── */
-#hud{position:absolute;top:0;left:0;right:0;z-index:20;
-  display:flex;justify-content:space-between;align-items:center;
-  background:linear-gradient(to bottom,rgba(2,3,5,.92),transparent);
-  padding:12px 20px 20px}
-.htitle{font-family:var(--serif);font-size:.88rem;letter-spacing:2px;color:#fff}
-.hkeys{display:flex;gap:10px;font-size:.66rem;flex-wrap:wrap}
-.kb{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
-  padding:2px 7px;border-radius:3px;color:var(--cyan)}
-.hlink{font-size:.66rem;color:var(--muted);text-decoration:none;
-  border:1px solid rgba(255,255,255,.1);padding:3px 10px;border-radius:16px;white-space:nowrap}
+/* ── HUD top ── */
+#hud{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-between;
+align-items:center;background:linear-gradient(to bottom,rgba(2,3,5,.85),transparent);padding:10px 18px 16px}
+.htitle{font-family:var(--serif);font-size:.85rem;letter-spacing:2px}
+.hkeys{display:flex;gap:8px;font-size:.6rem;flex-wrap:wrap}
+.kb{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);padding:1px 6px;border-radius:3px;color:var(--cyan)}
+.hlink{font-size:.62rem;color:var(--muted);text-decoration:none;border:1px solid rgba(255,255,255,.1);
+padding:2px 10px;border-radius:14px;white-space:nowrap}
 .hlink:hover{color:var(--cyan);border-color:var(--cyan)}
+#tmode{font-size:.65rem;padding:2px 10px;border-radius:10px;background:rgba(0,0,0,.6);
+border:1px solid rgba(255,255,255,.15);color:var(--muted)}
+#tmode.uv-on{color:var(--uv);border-color:var(--uv)}
 
 /* ── bottom bar ── */
-#bot{position:absolute;bottom:0;left:0;right:0;z-index:20;
-  display:flex;justify-content:space-between;align-items:flex-end;
-  background:linear-gradient(to top,rgba(2,3,5,.9),transparent);
-  padding:20px 20px 14px}
-
-/* ── evidence log ── */
-#evlog{display:flex;flex-direction:column;gap:5px;max-width:280px}
-.ev-tag{background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.22);
-  border-left:3px solid var(--cyan);border-radius:3px;padding:5px 9px;font-size:.68rem;
-  animation:fadeIn .4s ease}
-.ev-tag.uv{border-left-color:var(--uv);background:rgba(160,0,255,.08)}
-@keyframes fadeIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
-
-/* ── inventory ── */
-#inv{display:flex;gap:6px}
-.is{width:48px;height:48px;background:rgba(0,0,0,.6);
-  border:1px dashed rgba(255,255,255,.18);border-radius:6px;
-  display:flex;flex-direction:column;justify-content:center;align-items:center;
-  font-size:1.1rem;gap:2px;cursor:default}
-.is.on{border-style:solid;border-color:var(--cyan);background:rgba(0,240,255,.1)}
-.is span{font-size:.5rem;color:var(--muted);text-align:center;line-height:1}
-
-/* ── progress ── */
-#prog{display:flex;flex-direction:column;align-items:center;gap:4px}
-.prog-label{font-size:.66rem;color:var(--muted)}
-.prog-pip-row{display:flex;gap:4px}
-.pip{width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5)}
-.pip.on{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 6px rgba(0,240,255,.6)}
+#bot{position:absolute;bottom:0;left:0;right:0;z-index:20;display:flex;justify-content:space-between;
+align-items:flex-end;background:linear-gradient(to top,rgba(2,3,5,.85),transparent);padding:16px 18px 10px}
+#evlog{display:flex;flex-direction:column;gap:4px;max-width:260px}
+.et{background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.2);border-left:3px solid var(--cyan);
+border-radius:3px;padding:4px 8px;font-size:.65rem;animation:fi .4s ease}
+.et.uv{border-left-color:var(--uv);background:rgba(160,0,255,.08)}
+@keyframes fi{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+#inv{display:flex;gap:5px}
+.is{width:42px;height:42px;background:rgba(0,0,0,.6);border:1px dashed rgba(255,255,255,.16);border-radius:5px;
+display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:1rem;gap:1px}
+.is.on{border-style:solid;border-color:var(--cyan);background:rgba(0,240,255,.08)}
+.is span{font-size:.45rem;color:var(--muted);text-align:center;line-height:1}
+#prog{display:flex;flex-direction:column;align-items:center;gap:3px}
+.pl{font-size:.6rem;color:var(--muted)}
+.ppr{display:flex;gap:4px}
+.pip{width:12px;height:12px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5)}
+.pip.on{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 5px rgba(0,240,255,.5)}
 .pip.kp{background:var(--yellow);border-color:var(--yellow)}
+#ri{font-size:.65rem;color:var(--amber)}
 
-/* ── room indicator ── */
-#roomind{font-size:.72rem;color:var(--amber);text-align:center}
+/* ── radar ── */
+#radar{bottom:70px;right:16px;width:220px;padding:10px;gap:8px}
+#rc{border-radius:5px;width:100%;height:130px;display:block}
 
-/* ── torch mode badge ── */
-#tmode{font-size:.7rem;padding:3px 10px;border-radius:12px;
-  background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);color:var(--muted)}
-#tmode.uv-on{color:var(--uv);border-color:var(--uv);box-shadow:0 0 8px rgba(160,0,255,.3)}
+/* ── AI chat ── */
+#aip{bottom:16px;right:16px;width:300px;height:230px;padding:10px;gap:6px;z-index:22}
+#cl{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;font-size:.73rem;padding-right:3px;scrollbar-width:thin}
+.cm{padding:6px 10px;border-radius:5px;max-width:90%;line-height:1.4;word-break:break-word}
+.cm.bot{background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.22);align-self:flex-start}
+.cm.usr{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);align-self:flex-end}
+.cir{display:flex;gap:5px;flex-shrink:0}
+.ci{flex:1;background:#000;border:1px solid var(--border);color:#fff;padding:6px 9px;font-size:.73rem;border-radius:4px;outline:none}
+.ci:focus{border-color:var(--cyan)}
+.cs{background:var(--cyan);border:none;color:#000;padding:6px 10px;font-weight:700;font-size:.68rem;border-radius:4px;cursor:pointer}
 
-/* ── pointer-lock overlay ── */
-#lockscreen{position:absolute;inset:0;background:rgba(2,3,5,.96);z-index:100;
-  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;
-  backdrop-filter:blur(8px)}
-#lockscreen h1{font-family:var(--serif);font-size:2rem;color:var(--cyan);letter-spacing:4px;text-shadow:0 0 20px rgba(0,240,255,.4)}
-#lockscreen p{font-size:.82rem;color:var(--muted);text-align:center;max-width:400px;line-height:1.6}
-#lockscreen .start-btn{background:var(--cyan);color:#000;border:none;padding:14px 36px;
-  font-family:var(--mono);font-weight:700;font-size:.9rem;border-radius:6px;cursor:pointer;
-  letter-spacing:1px;box-shadow:0 0 20px rgba(0,240,255,.4)}
-#lockscreen .start-btn:hover{opacity:.9}
-.lock-keys{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;font-size:.72rem;color:var(--muted)}
-.lock-keys .kb{color:var(--txt)}
+/* ── overlay views (mindmap / dossier) ── */
+.ov{position:absolute;top:70px;left:14px;right:14px;bottom:14px;background:var(--glass);
+border:1px solid var(--border);border-radius:12px;z-index:40;display:none;flex-direction:column;
+backdrop-filter:blur(14px);padding:20px;gap:14px}
+.ovh{font-family:var(--serif);font-size:1.1rem;color:var(--cyan);border-bottom:1px solid rgba(0,240,255,.2);
+padding-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.xcb{background:var(--cyan);color:#000;border:none;padding:6px 14px;font-weight:700;font-size:.72rem;border-radius:4px;cursor:pointer}
+#mmsvg{flex:1;border-radius:8px;background:rgba(0,0,0,.4)}
+#dos{flex:1;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;scrollbar-width:thin}
+.dc{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:14px}
+.dc h4{font-family:var(--serif);color:var(--cyan);font-size:.85rem;margin-bottom:6px}
+.dc p,.dc li{font-size:.73rem;line-height:1.55;color:var(--muted)}
+.dc strong{color:var(--txt)}
+.red{background:rgba(255,255,255,.82);color:rgba(255,255,255,.82);border-radius:2px;padding:0 3px;cursor:help}
+.red:hover{background:var(--red);color:#fff}
+.rbr{display:flex;gap:3px;margin-top:5px}
+.rb{width:16px;height:16px;border-radius:3px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14)}
+.rb.on{background:var(--cyan);border-color:var(--cyan)}
+#wbs{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.wbs{width:46px;height:46px;background:rgba(0,0,0,.5);border:1px dashed rgba(255,255,255,.2);border-radius:5px;
+display:flex;justify-content:center;align-items:center;font-size:1rem;cursor:pointer;transition:all .2s}
+.wbs:hover{border-color:var(--cyan);background:rgba(0,240,255,.08)}
+.wbs.sel{border-style:solid;border-color:var(--yellow);background:rgba(255,204,0,.1)}
+#wbr{margin-top:8px;font-size:.72rem;color:var(--green);min-height:1.2em}
 
-/* ── keypad modal ── */
-#km{position:absolute;inset:0;background:rgba(0,0,0,.9);z-index:90;
-  display:none;justify-content:center;align-items:center;backdrop-filter:blur(6px)}
-.kpbox{background:var(--glass);border:1px solid var(--yellow);border-radius:12px;
-  padding:24px;width:290px;text-align:center;box-shadow:0 0 30px rgba(255,204,0,.15)}
-.kpbox h4{font-family:var(--serif);color:var(--yellow);font-size:.85rem;letter-spacing:2px;margin-bottom:14px}
-#kpd{background:#000;border:1px solid var(--yellow);color:var(--yellow);
-  font-size:1.5rem;padding:10px;border-radius:5px;letter-spacing:8px;margin-bottom:10px}
-#kperr{color:var(--red);font-size:.72rem;margin-bottom:8px;min-height:1.1em}
-.kpg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
-.kk{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#fff;
-  font-size:.95rem;padding:10px;border-radius:5px;cursor:pointer;transition:all .15s}
+/* ── keypad ── */
+#km{position:absolute;inset:0;background:rgba(0,0,0,.9);z-index:90;display:none;justify-content:center;
+align-items:center;backdrop-filter:blur(6px)}
+.kpb{background:var(--glass);border:1px solid var(--yellow);border-radius:12px;padding:20px;width:280px;text-align:center}
+.kpb h4{font-family:var(--serif);color:var(--yellow);font-size:.82rem;letter-spacing:2px;margin-bottom:12px}
+#kpd{background:#000;border:1px solid var(--yellow);color:var(--yellow);font-size:1.4rem;padding:9px;border-radius:5px;
+letter-spacing:8px;margin-bottom:10px}
+#kperr{color:var(--red);font-size:.7rem;margin-bottom:7px;min-height:1.1em}
+.kpg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.kk{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#fff;font-size:.9rem;
+padding:9px;border-radius:5px;cursor:pointer;transition:all .15s}
 .kk:hover{background:rgba(255,204,0,.18);border-color:var(--yellow)}
 .kfw{grid-column:span 3}
 
-/* ── inspect toast ── */
-#toast{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);
-  background:rgba(6,10,18,.97);border:1px solid var(--cyan);border-radius:8px;
-  padding:14px 20px;max-width:400px;z-index:80;font-size:.78rem;line-height:1.55;
-  box-shadow:0 0 24px rgba(0,240,255,.15);display:none;text-align:left;min-width:280px}
-#toast .ttitle{color:var(--cyan);font-size:.82rem;margin-bottom:6px;display:block}
-#toast .ttag{color:var(--yellow);font-size:.64rem;margin-bottom:8px;display:block}
+/* ── toast ── */
+#toast{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(6,10,18,.95);
+border:1px solid var(--cyan);border-radius:8px;padding:12px 18px;max-width:380px;z-index:80;font-size:.75rem;
+line-height:1.5;box-shadow:0 0 20px rgba(0,240,255,.12);display:none;text-align:left;min-width:260px}
+#toast .tt{color:var(--cyan);font-size:.78rem;margin-bottom:5px;display:block}
+#toast .tg{color:var(--yellow);font-size:.6rem;margin-bottom:6px;display:block}
 
 /* ── level complete ── */
-#lvlcmp{position:absolute;inset:0;background:rgba(0,0,0,.88);z-index:95;
-  display:none;justify-content:center;align-items:center;backdrop-filter:blur(8px)}
-.lvlbox{background:var(--glass);border:1px solid var(--green);border-radius:12px;
-  padding:30px;text-align:center;width:420px;box-shadow:0 0 30px rgba(0,255,136,.15)}
-.lvlbox h2{font-family:var(--serif);color:var(--green);font-size:1.3rem;margin-bottom:10px}
-.lvlbox p{color:var(--muted);font-size:.8rem;line-height:1.5;margin-bottom:18px}
-.lvlbox .grade{font-size:2rem;margin-bottom:10px}
-.next-btn{background:var(--green);color:#000;border:none;padding:11px 28px;
-  font-family:var(--mono);font-weight:700;font-size:.82rem;border-radius:5px;cursor:pointer;margin:4px}
-.rpt-btn{background:rgba(255,255,255,.08);color:var(--txt);border:1px solid rgba(255,255,255,.2);
-  padding:11px 28px;font-family:var(--mono);font-size:.82rem;border-radius:5px;cursor:pointer;margin:4px}
+#lc{position:absolute;inset:0;background:rgba(0,0,0,.88);z-index:95;display:none;justify-content:center;
+align-items:center;backdrop-filter:blur(8px)}
+.lcb{background:var(--glass);border:1px solid var(--green);border-radius:12px;padding:28px;text-align:center;
+width:400px;box-shadow:0 0 30px rgba(0,255,136,.12)}
+.lcb h2{font-family:var(--serif);color:var(--green);font-size:1.2rem;margin-bottom:8px}
+.lcb p{color:var(--muted);font-size:.78rem;line-height:1.5;margin-bottom:16px}
+.lcb .gr{font-size:1.8rem;margin-bottom:8px}
+.nb{background:var(--green);color:#000;border:none;padding:10px 24px;font-family:var(--mono);font-weight:700;
+font-size:.78rem;border-radius:5px;cursor:pointer;margin:3px}
+.rb2{background:rgba(255,255,255,.08);color:var(--txt);border:1px solid rgba(255,255,255,.2);padding:10px 24px;
+font-size:.78rem;border-radius:5px;cursor:pointer;margin:3px}
+
+/* ── lock screen ── */
+#ls{position:absolute;inset:0;background:rgba(2,3,5,.96);z-index:100;display:flex;flex-direction:column;
+justify-content:center;align-items:center;gap:16px;backdrop-filter:blur(8px)}
+#ls h1{font-family:var(--serif);font-size:1.8rem;color:var(--cyan);letter-spacing:4px;text-shadow:0 0 16px rgba(0,240,255,.3)}
+#ls p{font-size:.78rem;color:var(--muted);text-align:center;max-width:380px;line-height:1.6}
+.sb{background:var(--cyan);color:#000;border:none;padding:12px 32px;font-family:var(--mono);font-weight:700;
+font-size:.85rem;border-radius:6px;cursor:pointer;letter-spacing:1px;box-shadow:0 0 16px rgba(0,240,255,.3)}
+.sb:hover{opacity:.9}
+.lk{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-size:.68rem;color:var(--muted)}
+.lk .kb{color:var(--txt)}
+
+/* tab buttons */
+#tabs{position:absolute;top:52px;right:16px;z-index:21;display:flex;gap:5px}
+.tb{background:rgba(6,10,18,.8);border:1px solid rgba(255,255,255,.12);color:var(--muted);font-size:.62rem;
+padding:3px 9px;border-radius:4px;cursor:pointer;transition:all .2s}
+.tb:hover{border-color:rgba(0,240,255,.4);color:var(--cyan)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/math/SimplexNoise.js"></script>
 </head>
 <body>
 
 <div id="cv"></div>
 <div id="vig"></div>
-<div id="torch"></div>
 <div id="xh"></div>
 <div id="ap">[ E ] EXAMINE</div>
 
-<!-- HUD top -->
+<!-- HUD -->
 <div id="hud">
-  <div class="htitle" id="roomLabel">SCENE 01 — SURGICAL VAULT</div>
+  <div class="htitle" id="rl">SCENE 01 — SURGICAL VAULT</div>
   <div class="hkeys">
     <span><span class="kb">WASD</span> Move</span>
     <span><span class="kb">MOUSE</span> Look</span>
     <span><span class="kb">E</span> Interact</span>
     <span><span class="kb">F</span> UV Light</span>
+    <span><span class="kb">TAB</span> Boards</span>
     <span><span class="kb">ESC</span> Pause</span>
   </div>
-  <div style="display:flex;gap:8px;align-items:center">
+  <div style="display:flex;gap:6px;align-items:center">
     <div id="tmode">🔦 WHITE</div>
-    <a class="hlink" href="/" onclick="exitGame(event)">← EXIT</a>
+    <a class="hlink" href="/">← EXIT</a>
   </div>
 </div>
 
-<!-- HUD bottom -->
+<!-- Tab buttons -->
+<div id="tabs">
+  <button class="tb" onclick="toggleOverlay('mindmap')">MIND MAP</button>
+  <button class="tb" onclick="toggleOverlay('dossier')">DOSSIER</button>
+</div>
+
+<!-- Bottom bar -->
 <div id="bot">
   <div id="evlog"></div>
   <div id="prog">
-    <div class="prog-label" id="progLabel">CLUES 0/3</div>
-    <div class="prog-pip-row" id="pips"></div>
-    <div id="roomind">ROOM 1 / 7</div>
+    <div class="pl" id="pl">CLUES 0/3</div>
+    <div class="ppr" id="pips"></div>
+    <div id="ri">ROOM 1 / 7</div>
   </div>
   <div id="inv">
     <div class="is" id="s0"><span>—</span></div>
@@ -189,1140 +199,692 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   </div>
 </div>
 
-<!-- Pointer-lock start screen -->
-<div id="lockscreen">
+<!-- Radar -->
+<div id="radar" class="gp">
+  <div class="sl">Radar</div>
+  <canvas id="rc" width="200" height="128"></canvas>
+</div>
+
+<!-- AI Chat -->
+<div id="aip" class="gp">
+  <div class="sl" style="color:var(--cyan)">🤖 AI Forensic Assistant</div>
+  <div id="cl">
+    <div class="cm bot">Greetings, Investigator. Ask me for hints, clue analysis, or suspect info.</div>
+  </div>
+  <div class="cir">
+    <input class="ci" id="ci" placeholder="Ask AI…" onkeydown="if(event.key==='Enter')sendChat()"/>
+    <button class="cs" onclick="sendChat()">SEND</button>
+  </div>
+</div>
+
+<!-- Mind Map overlay -->
+<div class="ov" id="ov-mm">
+  <div class="ovh"><span>Evidence Connector Board</span><button class="xcb" onclick="toggleOverlay('')">CLOSE</button></div>
+  <svg id="mmsvg" viewBox="0 0 900 500"></svg>
+</div>
+
+<!-- Dossier overlay -->
+<div class="ov" id="ov-dos">
+  <div class="ovh"><span>Confidential Case Dossier</span><button class="xcb" onclick="toggleOverlay('')">CLOSE</button></div>
+  <div id="dos">
+    <div class="dc"><h4>CASE #9042-VAULT</h4>
+      <p><strong>Status:</strong> <span style="color:var(--yellow)">ACTIVE</span></p>
+      <p><strong>Facility:</strong> Decommissioned Cyber-Vault — Sector B</p>
+      <p>UV traces B4–B9. Keypad forensic sequence required.</p></div>
+    <div class="dc"><h4>SUSPECT — DR. ARIS THORNE</h4>
+      <p><strong>Age:</strong> 42 <strong>Status:</strong> <span style="color:var(--red)">AT LARGE</span></p>
+      <p>Neural-implant specialist. Handwriting matches UV cipher.</p>
+      <p>Last auth: <span class="red" title="CLASSIFIED">CLASSIFIED</span></p></div>
+    <div class="dc"><h4>REDACTED INTEL</h4>
+      <ul style="margin-left:12px;margin-top:4px">
+        <li>Codename: <span class="red" title="VAULT PHANTOM">███████</span></li>
+        <li>Target: <span class="red" title="NEURAL ARCHIVE">██████</span></li>
+        <li>Method: <span class="red" title="BIO-CHIP EXTRACTION">██████</span></li>
+      </ul></div>
+    <div class="dc"><h4>RATING & WORKBENCH</h4>
+      <p>Clues: <div class="rbr" id="rbr"></div></p>
+      <p style="margin-top:6px">Grade: <strong id="rg" style="color:var(--cyan)">—</strong></p>
+      <h4 style="margin-top:10px">Combine Items</h4>
+      <div id="wbs"></div>
+      <div id="wbr"></div></div>
+  </div>
+</div>
+
+<!-- Keypad -->
+<div id="km"><div class="kpb">
+  <h4>⌨ KEYPAD OVERRIDE</h4>
+  <div id="kpd">_ _ _ _</div><div id="kperr"></div>
+  <div class="kpg">
+    <button class="kk" onclick="kp('1')">1</button><button class="kk" onclick="kp('2')">2</button><button class="kk" onclick="kp('3')">3</button>
+    <button class="kk" onclick="kp('4')">4</button><button class="kk" onclick="kp('5')">5</button><button class="kk" onclick="kp('6')">6</button>
+    <button class="kk" onclick="kp('7')">7</button><button class="kk" onclick="kp('8')">8</button><button class="kk" onclick="kp('9')">9</button>
+    <button class="kk" onclick="kpClr()">CLR</button><button class="kk" onclick="kp('0')">0</button><button class="kk" onclick="kpSub()">OK</button>
+  </div>
+  <button class="kk kfw" onclick="closeKP()">CANCEL</button>
+</div></div>
+
+<!-- Toast -->
+<div id="toast"><span class="tt" id="tt"></span><span class="tg" id="tg"></span><span id="td"></span></div>
+
+<!-- Level complete -->
+<div id="lc"><div class="lcb">
+  <div class="gr" id="lgr">⭐⭐⭐</div>
+  <h2 id="lt">ROOM CLEARED</h2><p id="ld">All evidence secured.</p>
+  <div><button class="nb" id="ln" onclick="nextRoom()">NEXT ROOM →</button>
+  <button class="rb2" onclick="replayRoom()">REPLAY</button></div>
+</div></div>
+
+<!-- Lock screen -->
+<div id="ls">
   <h1>CYBERVAULT</h1>
   <p>First-Person Forensic Crime Scene Investigation.<br>
      Explore 7 atmospheric rooms. Find hidden evidence.<br>
      Decode UV clues. Solve keypad locks. Uncover the truth.</p>
-  <div class="lock-keys">
-    <span><span class="kb">WASD</span> Walk</span>
-    <span><span class="kb">MOUSE</span> Look</span>
-    <span><span class="kb">E</span> Interact</span>
-    <span><span class="kb">F</span> UV Torch</span>
-    <span><span class="kb">ESC</span> Pause</span>
+  <div class="lk">
+    <span><span class="kb">WASD</span> Walk</span><span><span class="kb">MOUSE</span> Look</span>
+    <span><span class="kb">E</span> Interact</span><span><span class="kb">F</span> UV</span>
+    <span><span class="kb">TAB</span> Boards</span><span><span class="kb">ESC</span> Pause</span>
   </div>
-  <button class="start-btn" id="startBtn">ENTER CRIME SCENE</button>
-</div>
-
-<!-- Keypad -->
-<div id="km">
-  <div class="kpbox">
-    <h4>⌨ KEYPAD OVERRIDE</h4>
-    <div id="kpd">_ _ _ _</div>
-    <div id="kperr"></div>
-    <div class="kpg">
-      <button class="kk" onclick="kp('1')">1</button><button class="kk" onclick="kp('2')">2</button><button class="kk" onclick="kp('3')">3</button>
-      <button class="kk" onclick="kp('4')">4</button><button class="kk" onclick="kp('5')">5</button><button class="kk" onclick="kp('6')">6</button>
-      <button class="kk" onclick="kp('7')">7</button><button class="kk" onclick="kp('8')">8</button><button class="kk" onclick="kp('9')">9</button>
-      <button class="kk" onclick="kpClr()">CLR</button><button class="kk" onclick="kp('0')">0</button><button class="kk" onclick="kpSub()">OK</button>
-    </div>
-    <button class="kk kfw" onclick="closeKP()">CANCEL</button>
-  </div>
-</div>
-
-<!-- Inspect toast -->
-<div id="toast">
-  <span class="ttitle" id="ttitle"></span>
-  <span class="ttag" id="ttag"></span>
-  <span id="tdesc"></span>
-</div>
-
-<!-- Level complete -->
-<div id="lvlcmp">
-  <div class="lvlbox">
-    <div class="grade" id="lcgrade">⭐</div>
-    <h2 id="lcTitle">ROOM CLEARED</h2>
-    <p id="lcDesc">All evidence secured.</p>
-    <div>
-      <button class="next-btn" id="lcNext" onclick="nextRoom()">NEXT ROOM →</button>
-      <button class="rpt-btn" onclick="replayRoom()">REPLAY</button>
-    </div>
-  </div>
+  <button class="sb" id="sb">ENTER CRIME SCENE</button>
 </div>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   AUDIO ENGINE
-═══════════════════════════════════════════════════════════════ */
-const SFX = {
-  ctx: null,
-  init() {
-    if (this.ctx) return;
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    this._amb();
-  },
-  _t(f, type, dur, vol = .07, del = 0) {
-    if (!this.ctx) return;
-    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    o.type = type; o.frequency.value = f;
-    const t = this.ctx.currentTime + del;
-    g.gain.setValueAtTime(vol, t);
-    g.gain.exponentialRampToValueAtTime(.001, t + dur);
-    o.connect(g); g.connect(this.ctx.destination);
-    o.start(t); o.stop(t + dur);
-  },
-  step()   { this._t(120,'sine',.08,.04); },
-  click()  { this._t(900,'sine',.05,.04); },
-  uv()     { this._t(1400,'triangle',.12,.06); this._t(900,'sine',.12,.04,.05); },
-  clue()   { [523,659,784].forEach((f,i) => this._t(f,'sine',.22,.09,i*.1)); },
-  beep()   { this._t(1100,'square',.07,.025); },
-  err()    { this._t(200,'sawtooth',.14,.06); },
-  unlock() { [400,700,1000].forEach((f,i) => this._t(f,'sine',.28,.12,i*.13)); },
-  door()   { this._t(80,'sawtooth',.3,.08); this._t(180,'sine',.3,.05,.1); },
-  pickup() { this._t(1500,'sine',.07,.05); this._t(2000,'sine',.07,.04,.08); },
-  _amb() {
-    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    const f = this.ctx.createBiquadFilter();
-    o.type = 'sawtooth'; o.frequency.value = 40;
-    f.type = 'lowpass'; f.frequency.value = 90;
-    g.gain.value = .012;
-    o.connect(f); f.connect(g); g.connect(this.ctx.destination);
-    o.start();
-    // random creak
-    setInterval(() => {
-      if (Math.random() < .2) {
-        this._t(60 + Math.random() * 40, 'sine', .4 + Math.random() * .6, .03);
-      }
-    }, 4000);
-  }
-};
+/* ══ AUDIO ════════════════════════════════════════════════════ */
+const SFX={ctx:null,init(){if(this.ctx)return;this.ctx=new(window.AudioContext||window.webkitAudioContext)();this._amb()},
+_t(f,t,d,v=.06,l=0){if(!this.ctx)return;const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+o.type=t;o.frequency.value=f;const tm=this.ctx.currentTime+l;g.gain.setValueAtTime(v,tm);
+g.gain.exponentialRampToValueAtTime(.001,tm+d);o.connect(g);g.connect(this.ctx.destination);o.start(tm);o.stop(tm+d)},
+step(){this._t(120,'sine',.06,.03)},click(){this._t(900,'sine',.04,.03)},
+uv(){this._t(1400,'triangle',.1,.05);this._t(900,'sine',.1,.03,.04)},
+clue(){[523,659,784].forEach((f,i)=>this._t(f,'sine',.2,.08,i*.09))},
+beep(){this._t(1100,'square',.06,.02)},err(){this._t(200,'sawtooth',.12,.05)},
+unlock(){[400,700,1000].forEach((f,i)=>this._t(f,'sine',.25,.1,i*.12))},
+door(){this._t(80,'sawtooth',.25,.07);this._t(180,'sine',.25,.04,.08)},
+pickup(){this._t(1500,'sine',.06,.04);this._t(2000,'sine',.06,.03,.07)},
+_amb(){const o=this.ctx.createOscillator(),g=this.ctx.createGain(),f=this.ctx.createBiquadFilter();
+o.type='sawtooth';o.frequency.value=42;f.type='lowpass';f.frequency.value=85;g.gain.value=.01;
+o.connect(f);f.connect(g);g.connect(this.ctx.destination);o.start();
+setInterval(()=>{if(Math.random()<.15)this._t(55+Math.random()*35,'sine',.35+Math.random()*.5,.02)},5000)}};
 
-/* ═══════════════════════════════════════════════════════════════
-   ROOM DEFINITIONS — 7 crime scenes from reference images
-═══════════════════════════════════════════════════════════════ */
-const ROOMS = [
-  {
-    id: 1, name: 'SCENE 01 — SURGICAL VAULT',
-    bg: 0x030508, fogDen: .09, ambient: [0x0d1520, .45],
-    startPos: [0, 1.7, 4],
-    code: '8041',
-    clues: {
-      'S1A': { name: 'Hydraulic Operating Table',    tag: 'BIO-EVD-01',
-        desc: 'Hydraulic tilt mechanism unlocked. Type O− stain pattern around head-rest. Luminol reacts strongly. Recent use confirmed.', item: { icon: '🩺', label: 'Scalpel' } },
-      'S1B': { name: 'UV Wall Cipher',               tag: 'UV-EVD-02 (UV ONLY)',
-        desc: 'Phosphorescent scratch-code on rear wall: [ 8 – 0 – 4 – 1 ]. Strontium aluminate compound. Handwriting: Dr. A. Thorne.', uvOnly: true },
-      'S1C': { name: 'Keypad Blast Door',             tag: 'LOCK-EVD-03',
-        desc: 'Reinforced exit door, 4-digit override. Burn marks on housing suggest prior forced entry.', isKeypad: true }
-    }
-  },
-  {
-    id: 2, name: 'SCENE 02 — OVERGROWN CORRIDOR',
-    bg: 0x030806, fogDen: .1, ambient: [0x0a1810, .4],
-    startPos: [0, 1.7, 5],
-    code: '1994',
-    clues: {
-      'S2A': { name: 'Vine-Fused Pillar',            tag: 'BIO-EVD-04',
-        desc: 'Electrical conduits absorbed by mutated root system — 48V still active. QK-7703 memory module wedged inside, still warm.', item: { icon: '💾', label: 'Memory Module' } },
-      'S2B': { name: 'Fluorescent Handprints',       tag: 'UV-EVD-05 (UV ONLY)',
-        desc: 'UV sweep: glowing right-hand prints track right wall. Pattern terminates at scratched code: [ 1 – 9 – 9 – 4 ].', uvOnly: true },
-      'S2C': { name: 'Forced Gate',                  tag: 'LOCK-EVD-06',
-        desc: 'Titanium-frame gate forced open from inside. Last auth log: Thorne, A — 03:14.', isKeypad: true }
-    }
-  },
-  {
-    id: 3, name: 'SCENE 03 — SAFEHOUSE KITCHEN',
-    bg: 0x080604, fogDen: .07, ambient: [0x1a1208, .5],
-    startPos: [0, 1.7, 4.5],
-    code: '3307',
-    clues: {
-      'S3A': { name: 'Wooden Safehouse Table',       tag: 'PHY-EVD-07',
-        desc: 'Two coffee mugs still warm — occupant fled ≤90 min. Palm print on handle. NRX-7 bottle nearby (fingerprint solvent).', item: { icon: '🧪', label: 'NRX-7 Solvent' } },
-      'S3B': { name: 'UV Ink Ledger',                tag: 'UV-EVD-08 (UV ONLY)',
-        desc: 'Invisible ink on tabletop: "Transfer complete — code 3307 — rendezvous Vault B." Strontium aluminate, covert-ops grade.', uvOnly: true },
-      'S3C': { name: 'Concealed Cabinet Door',       tag: 'LOCK-EVD-09',
-        desc: 'Service passage disguised as pantry cabinet — modern electronic deadbolt hidden behind false panel.', isKeypad: true }
-    }
-  },
-  {
-    id: 4, name: 'SCENE 04 — HAUNTED LIBRARY',
-    bg: 0x0b0807, fogDen: .065, ambient: [0x180e06, .45],
-    startPos: [0, 1.7, 5],
-    code: '1666',
-    clues: {
-      'S4A': { name: '12-Arm Candle Chandelier',     tag: 'PHY-EVD-10',
-        desc: 'Three arms recently extinguished. Wax drip analysis: <4hrs. No wind source — someone was here. Iron ring shows heat-stress.', item: { icon: '🕯️', label: 'Wax Sample' } },
-      'S4B': { name: 'UV Shelf Cipher',              tag: 'UV-EVD-11 (UV ONLY)',
-        desc: 'Third bookshelf: invisible ink reads "THE CLOCK HOLDS THE KEY — 1666". Sigil matches Site-09 crest.', uvOnly: true },
-      'S4C': { name: 'Grandfather Clock',            tag: 'LOCK-EVD-12',
-        desc: 'Clock face conceals keypad behind pendulum housing. Mechanism electrically controlled.', isKeypad: true }
-    }
-  },
-  {
-    id: 5, name: 'SCENE 05 — SEALED RED CHAMBER',
-    bg: 0x050203, fogDen: .09, ambient: [0x0e0404, .4],
-    startPos: [0, 1.7, 4.5],
-    code: '0666',
-    clues: {
-      'S5A': { name: 'Blood-Red X Symbol',           tag: 'BIO-EVD-13',
-        desc: 'Type AB+, fresh. Pattern decodes to cipher from Thorne\'s notebook: "THEY ARE WATCHING VAULT B."', item: { icon: '🔴', label: 'Blood Swab' } },
-      'S5B': { name: 'UV Floor Inscription',         tag: 'UV-EVD-14 (UV ONLY)',
-        desc: 'Concentric UV rings on floor: "0666 — THE SEAL IS BROKEN — FIND VAULT B." Synthetic phosphorescent polymer — custom manufacture.', uvOnly: true },
-      'S5C': { name: 'Barricaded Exit',              tag: 'LOCK-EVD-15',
-        desc: 'Door sealed from outside with wedged chair and electronic deadbolt. Room was a trap.', isKeypad: true }
-    }
-  },
-  {
-    id: 6, name: 'SCENE 06 — MANSION GALLERY',
-    bg: 0x06050b, fogDen: .06, ambient: [0x100a18, .45],
-    startPos: [0, 1.7, 5.5],
-    code: '2247',
-    clues: {
-      'S6A': { name: 'Portrait with Hidden Scanner', tag: 'TECH-EVD-16',
-        desc: 'Retinal lenses embedded behind irises — still transmitting. Wiring harness behind frame leads to sub-basement network.', item: { icon: '🎨', label: 'Lens Fragment' } },
-      'S6B': { name: 'UV Blood Trail',               tag: 'UV-EVD-17 (UV ONLY)',
-        desc: 'UV trail from chalk outline to staircase gate. Drip pattern: victim dragged, not placed. Scratched at trail end: 2247.', uvOnly: true },
-      'S6C': { name: 'Staircase Security Gate',      tag: 'LOCK-EVD-18',
-        desc: '"CRIME SCENE DO NOT CROSS". Iron-bar gate leads to cellar — where victim was originally found.', isKeypad: true }
-    }
-  },
-  {
-    id: 7, name: 'SCENE 07 — CRIME SCENE BATHROOM',
-    bg: 0x030404, fogDen: .08, ambient: [0x0a0c0c, .45],
-    startPos: [0, 1.7, 4],
-    code: null,
-    clues: {
-      'S7A': { name: 'Victim Sheet',                 tag: 'FINAL-EVD-19',
-        desc: 'Lord Victor Vance. ToD 02:07. Posterior occipital blunt trauma. One shoe missing. Forensic outline confirms single assailant.', item: { icon: '📋', label: 'Case File' } },
-      'S7B': { name: 'UV Mirror Text',               tag: 'UV-EVD-20 (UV ONLY)',
-        desc: 'Mirror reads in UV reverse-script: "DR. THORNE — VAULT B — 51.509°N 0.118°W". Final coordinate. Investigation complete.', uvOnly: true },
-      'S7C': { name: 'Bathtub DNA Trace',            tag: 'FINAL-EVD-21',
-        desc: 'DNA confirmed match to victim. Shower curtain manually torn. Key-shaped rust mark on tub lip — vault key was stored here.', item: { icon: '🔑', label: 'Vault Key' } }
-    }
-  }
+/* ══ ROOM DATA ════════════════════════════════════════════════ */
+const ROOMS=[
+{id:1,name:'SCENE 01 — SURGICAL VAULT',bg:0x040608,fog:.08,amb:[0x1a2438,.55],start:[0,1.7,4],code:'8041',
+clues:{'S1A':{name:'Hydraulic Operating Table',tag:'BIO-EVD-01',desc:'Hydraulic tilt mechanism unlocked. Type O− stain pattern around head-rest. Luminol reacts strongly. Recent use confirmed.',item:{icon:'🩺',label:'Scalpel'}},
+'S1B':{name:'UV Wall Cipher',tag:'UV-EVD-02',desc:'Phosphorescent scratch-code: [ 8-0-4-1 ]. Strontium aluminate compound. Handwriting: Dr. A. Thorne.',uvOnly:true},
+'S1C':{name:'Keypad Blast Door',tag:'LOCK-03',desc:'Reinforced exit door, 4-digit override. Burn marks on housing.',isKeypad:true}}},
+{id:2,name:'SCENE 02 — OVERGROWN CORRIDOR',bg:0x04080a,fog:.09,amb:[0x0e1e16,.5],start:[0,1.7,5],code:'1994',
+clues:{'S2A':{name:'Vine-Fused Pillar',tag:'BIO-EVD-04',desc:'Electrical conduits absorbed by mutated root system — 48V active. QK-7703 memory module inside, still warm.',item:{icon:'💾',label:'Memory Module'}},
+'S2B':{name:'Fluorescent Handprints',tag:'UV-EVD-05',desc:'UV: glowing right-hand prints. Pattern terminates at scratched code: [ 1-9-9-4 ].',uvOnly:true},
+'S2C':{name:'Forced Gate',tag:'LOCK-06',desc:'Titanium-frame gate forced open from inside. Last auth: Thorne, A — 03:14.',isKeypad:true}}},
+{id:3,name:'SCENE 03 — SAFEHOUSE KITCHEN',bg:0x0a0806,fog:.06,amb:[0x1e160a,.55],start:[0,1.7,4.5],code:'3307',
+clues:{'S3A':{name:'Wooden Safehouse Table',tag:'PHY-EVD-07',desc:'Two coffee mugs still warm — occupant fled ≤90 min. Palm print on handle. NRX-7 solvent bottle nearby.',item:{icon:'🧪',label:'NRX-7 Solvent'}},
+'S3B':{name:'UV Ink Ledger',tag:'UV-EVD-08',desc:'Invisible ink: "Transfer complete — code 3307 — rendezvous Vault B." Strontium aluminate, covert-ops.',uvOnly:true},
+'S3C':{name:'Concealed Passage',tag:'LOCK-09',desc:'Service passage disguised as pantry cabinet — modern electronic deadbolt behind false panel.',isKeypad:true}}},
+{id:4,name:'SCENE 04 — HAUNTED LIBRARY',bg:0x0c0807,fog:.055,amb:[0x1a1208,.5],start:[0,1.7,5],code:'1666',
+clues:{'S4A':{name:'12-Arm Candle Chandelier',tag:'PHY-EVD-10',desc:'Three arms recently extinguished. Wax drip: <4hrs. No wind source — someone was here.',item:{icon:'🕯️',label:'Wax Sample'}},
+'S4B':{name:'UV Shelf Cipher',tag:'UV-EVD-11',desc:'Third bookshelf: "THE CLOCK HOLDS THE KEY — 1666". Sigil matches Site-09 crest.',uvOnly:true},
+'S4C':{name:'Grandfather Clock',tag:'LOCK-12',desc:'Clock face conceals keypad behind pendulum housing. Electrically controlled.',isKeypad:true}}},
+{id:5,name:'SCENE 05 — SEALED RED CHAMBER',bg:0x060304,fog:.08,amb:[0x120606,.45],start:[0,1.7,4.5],code:'0666',
+clues:{'S5A':{name:'Blood-Red X Symbol',tag:'BIO-EVD-13',desc:'Type AB+, fresh. Decodes to cipher from Thorne\'s notebook: "THEY ARE WATCHING VAULT B."',item:{icon:'🔴',label:'Blood Swab'}},
+'S5B':{name:'UV Floor Inscription',tag:'UV-EVD-14',desc:'Concentric UV rings: "0666 — THE SEAL IS BROKEN — FIND VAULT B." Synthetic phosphorescent polymer.',uvOnly:true},
+'S5C':{name:'Barricaded Exit',tag:'LOCK-15',desc:'Door sealed from outside with wedged chair and electronic deadbolt. Room was a trap.',isKeypad:true}}},
+{id:6,name:'SCENE 06 — MANSION GALLERY',bg:0x080610,fog:.05,amb:[0x140e1c,.5],start:[0,1.7,5.5],code:'2247',
+clues:{'S6A':{name:'Portrait Hidden Scanner',tag:'TECH-EVD-16',desc:'Retinal lenses behind irises — still transmitting. Wiring harness leads to sub-basement network.',item:{icon:'🎨',label:'Lens Fragment'}},
+'S6B':{name:'UV Blood Trail',tag:'UV-EVD-17',desc:'UV trail from chalk outline to gate. Drip pattern: victim dragged. Scratched at trail end: 2247.',uvOnly:true},
+'S6C':{name:'Staircase Gate',tag:'LOCK-18',desc:'Iron-bar gate leads to cellar — where victim was originally found.',isKeypad:true}}},
+{id:7,name:'SCENE 07 — CRIME SCENE BATHROOM',bg:0x040505,fog:.07,amb:[0x0e1010,.5],start:[0,1.7,4],code:null,
+clues:{'S7A':{name:'Victim Sheet',tag:'FINAL-19',desc:'Lord Victor Vance. ToD 02:07. Posterior occipital blunt trauma. One shoe missing.',item:{icon:'📋',label:'Case File'}},
+'S7B':{name:'UV Mirror Text',tag:'UV-20',desc:'Mirror UV reverse-script: "DR. THORNE — VAULT B — 51.509°N 0.118°W". Final coordinate.',uvOnly:true},
+'S7C':{name:'Bathtub DNA Trace',tag:'FINAL-21',desc:'DNA confirmed match to victim. Shower curtain manually torn. Key-shaped rust mark on tub lip.',item:{icon:'🔑',label:'Vault Key'}}}}
 ];
 
-/* ═══════════════════════════════════════════════════════════════
-   ENGINE STATE
-═══════════════════════════════════════════════════════════════ */
-let scene, camera, renderer, clock;
-let pitch = 0, yaw = 0;
-let moveF = false, moveB = false, moveL = false, moveR = false;
-let locked = false, uvMode = false, torchOn = false;
-let iObjs = [], hObj = null;
-let kpBuf = '', kpActive = false;
-let inventory = [];
-let roomIdx = 0;
-let found = {};
-for (const r of ROOMS) found[r.id] = new Set();
-const CLUES_PER_ROOM = 3;
-let dust, flickerLights = [];
-let toastTimer = null;
-let _t = 0;
+/* ══ ENGINE STATE ══════════════════════════════════════════════ */
+let scene,camera,renderer,clock;
+let pitch=0,yaw=0,mF=0,mB=0,mL=0,mR=0;
+let locked=false,uvMode=false;
+let iObjs=[],hObj=null;
+let kpBuf='',kpActive=false;
+let inventory=[],roomIdx=0;
+let found={},dust,fl=[];
+let toastT=null,wbSel=[],_t=0,overlayOpen='';
+for(const r of ROOMS)found[r.id]=new Set();
 
-/* ═══════════════════════════════════════════════════════════════
-   BOOTSTRAP
-═══════════════════════════════════════════════════════════════ */
-(function boot() {
-  const con = document.getElementById('cv');
-
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 80);
-  camera.position.set(0, 1.7, 4);
-  clock = new THREE.Clock();
-
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setSize(innerWidth, innerHeight);
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+/* ══ BOOTSTRAP ════════════════════════════════════════════════ */
+(function boot(){
+  const con=document.getElementById('cv');
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.05,80);
+  camera.position.set(0,1.7,4);
+  camera.rotation.order='YXZ';
+  clock=new THREE.Clock();
+  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.25;
   con.appendChild(renderer.domElement);
 
   // dust
-  const pg = new THREE.BufferGeometry();
-  const pp = new Float32Array(300 * 3);
-  for (let i = 0; i < 300 * 3; i += 3) { pp[i] = (Math.random() - .5) * 12; pp[i + 1] = Math.random() * 4.5; pp[i + 2] = (Math.random() - .5) * 12; }
-  pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
-  dust = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0x8899bb, size: .022, transparent: true, opacity: .22 }));
+  const pg=new THREE.BufferGeometry(),pp=new Float32Array(250*3);
+  for(let i=0;i<250*3;i+=3){pp[i]=(Math.random()-.5)*12;pp[i+1]=Math.random()*4.5;pp[i+2]=(Math.random()-.5)*12}
+  pg.setAttribute('position',new THREE.BufferAttribute(pp,3));
+  dust=new THREE.Points(pg,new THREE.PointsMaterial({color:0x99aabb,size:.022,transparent:true,opacity:.25}));
 
-  // pointer lock
-  document.getElementById('startBtn').addEventListener('click', requestLock);
-  document.addEventListener('pointerlockchange', onPLChange);
-  document.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('keydown', onKeyDown);
-  window.addEventListener('keyup', onKeyUp);
-  window.addEventListener('resize', () => {
-    camera.aspect = innerWidth / innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-  });
-  renderer.domElement.addEventListener('click', onCanvasClick);
+  document.getElementById('sb').addEventListener('click',()=>{SFX.init();document.getElementById('cv').requestPointerLock()});
+  document.addEventListener('pointerlockchange',onPL);
+  document.addEventListener('mousemove',onMM);
+  window.addEventListener('keydown',onKD);
+  window.addEventListener('keyup',onKU);
+  window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+  renderer.domElement.addEventListener('click',()=>{if(locked&&hObj)interact(hObj)});
 
   loadRoom(0);
   loop();
 })();
 
-function requestLock() {
-  SFX.init();
-  document.getElementById('cv').requestPointerLock();
+function onPL(){locked=document.pointerLockElement===document.getElementById('cv');
+  document.getElementById('ls').style.display=locked?'none':'flex';
+  if(overlayOpen)toggleOverlay('');}
+function onMM(e){if(!locked)return;yaw-=e.movementX*.0018;pitch-=e.movementY*.0018;pitch=Math.max(-1.2,Math.min(1.2,pitch))}
+function onKD(e){
+  if(e.code==='KeyW')mF=1;if(e.code==='KeyS')mB=1;if(e.code==='KeyA')mL=1;if(e.code==='KeyD')mR=1;
+  if(e.code==='KeyF'&&locked)toggleUV();
+  if(e.code==='KeyE'&&locked&&hObj)interact(hObj);
+  if(e.code==='Tab'){e.preventDefault();if(locked)toggleOverlay(overlayOpen==='mindmap'?'':'mindmap')}
+  if(e.code==='Escape'){if(kpActive)closeKP();else if(overlayOpen)toggleOverlay('')}
+}
+function onKU(e){if(e.code==='KeyW')mF=0;if(e.code==='KeyS')mB=0;if(e.code==='KeyA')mL=0;if(e.code==='KeyD')mR=0}
+
+/* ══ MOVEMENT ════════════════════════════════════════════════ */
+const _f=new THREE.Vector3(),_r=new THREE.Vector3(),_v=new THREE.Vector3();
+function move(dt){
+  if(!locked||kpActive||overlayOpen)return;
+  camera.getWorldDirection(_f);_f.y=0;_f.normalize();
+  _r.crossVectors(_f,camera.up).normalize();
+  _v.set(0,0,0);const s=3.2;
+  if(mF)_v.addScaledVector(_f,s*dt);if(mB)_v.addScaledVector(_f,-s*dt);
+  if(mR)_v.addScaledVector(_r,s*dt);if(mL)_v.addScaledVector(_r,-s*dt);
+  camera.position.add(_v);
+  camera.position.x=Math.max(-5.5,Math.min(5.5,camera.position.x));
+  camera.position.z=Math.max(-6.5,Math.min(6.5,camera.position.z));
+  if(_v.lengthSq()>.0001){_t+=dt*7;camera.position.y=1.7+Math.sin(_t)*.025;
+    if(Math.abs(Math.sin(_t))<.05)SFX.step()}else camera.position.y=1.7;
+  camera.rotation.y=yaw;camera.rotation.x=pitch;
 }
 
-function onPLChange() {
-  locked = document.pointerLockElement === document.getElementById('cv');
-  document.getElementById('lockscreen').style.display = locked ? 'none' : 'flex';
-  torchOn = locked;
-  document.getElementById('torch').className = locked ? 'on' : '';
+/* ══ UV TOGGLE ═══════════════════════════════════════════════ */
+function toggleUV(){
+  uvMode=!uvMode;SFX.uv();
+  document.getElementById('vig').className=uvMode?'uv':'';
+  document.getElementById('tmode').className=uvMode?'uv-on':'';
+  document.getElementById('tmode').innerText=uvMode?'🔮 UV LIGHT':'🔦 WHITE';
+  iObjs.forEach(o=>{const cl=ROOMS[roomIdx].clues[o.userData.cid];if(cl&&cl.uvOnly)o.material.opacity=uvMode?.8:0});
+  dust.material.color.set(uvMode?0xcc00ff:0x99aabb);
+  dust.material.opacity=uvMode?.4:.25;
+  if(scene.__uvSpot)scene.__uvSpot.visible=uvMode;
+  if(scene.__wSpot)scene.__wSpot.visible=!uvMode;
 }
 
-function onMouseMove(e) {
-  if (!locked) return;
-  const sens = .0018;
-  yaw -= e.movementX * sens;
-  pitch -= e.movementY * sens;
-  pitch = Math.max(-1.2, Math.min(1.2, pitch));
+/* ══ RAYCAST ════════════════════════════════════════════════ */
+const _rc=new THREE.Raycaster(),_c=new THREE.Vector2(0,0);
+function ray(){
+  _rc.setFromCamera(_c,camera);_rc.far=3.5;
+  const hits=_rc.intersectObjects(iObjs,true);
+  const xh=document.getElementById('xh'),ap=document.getElementById('ap');
+  if(hits.length>0){
+    let o=hits[0].object;while(o&&!o.userData.cid&&o.parent)o=o.parent;
+    if(!o||!o.userData.cid){hObj=null;xh.className='';ap.style.display='none';return}
+    const cl=ROOMS[roomIdx].clues[o.userData.cid];
+    if(cl&&cl.uvOnly&&!uvMode){hObj=null;xh.className='';ap.style.display='none';return}
+    hObj=o;xh.className=uvMode?'uv-hit':'hit';ap.style.display='block';
+    ap.innerText=cl&&cl.isKeypad?'[ E ] KEYPAD':`[ E ] ${cl?cl.name:'Examine'}`;
+  }else{hObj=null;xh.className='';ap.style.display='none'}
 }
 
-function onKeyDown(e) {
-  if (e.code === 'KeyW') moveF = true;
-  if (e.code === 'KeyS') moveB = true;
-  if (e.code === 'KeyA') moveL = true;
-  if (e.code === 'KeyD') moveR = true;
-  if ((e.code === 'KeyF') && locked) toggleUV();
-  if ((e.code === 'KeyE') && locked && hObj) interact(hObj);
-  if (e.code === 'Escape') { kpActive && closeKP(); }
-}
-function onKeyUp(e) {
-  if (e.code === 'KeyW') moveF = false;
-  if (e.code === 'KeyS') moveB = false;
-  if (e.code === 'KeyA') moveL = false;
-  if (e.code === 'KeyD') moveR = false;
-}
-function onCanvasClick() {
-  if (!locked) return;
-  if (hObj) interact(hObj);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   MOVEMENT
-═══════════════════════════════════════════════════════════════ */
-const _fwd = new THREE.Vector3(), _right = new THREE.Vector3(), _vel = new THREE.Vector3();
-function updateMovement(dt) {
-  if (!locked || kpActive) return;
-  camera.getWorldDirection(_fwd); _fwd.y = 0; _fwd.normalize();
-  _right.crossVectors(_fwd, camera.up).normalize();
-  _vel.set(0, 0, 0);
-  const spd = 3.0;
-  if (moveF) _vel.addScaledVector(_fwd, spd * dt);
-  if (moveB) _vel.addScaledVector(_fwd, -spd * dt);
-  if (moveR) _vel.addScaledVector(_right, spd * dt);
-  if (moveL) _vel.addScaledVector(_right, -spd * dt);
-
-  camera.position.add(_vel);
-
-  // clamp to room bounds
-  camera.position.x = Math.max(-5.2, Math.min(5.2, camera.position.x));
-  camera.position.z = Math.max(-6.2, Math.min(6.2, camera.position.z));
-  camera.position.y = 1.7; // fixed eye height
-
-  // footstep
-  if (_vel.lengthSq() > .0001) {
-    _t += dt * 8;
-    camera.position.y = 1.7 + Math.sin(_t) * .028;
-    if (Math.abs(Math.sin(_t)) < .05) SFX.step();
+function interact(o){
+  if(!o)return;const cl=ROOMS[roomIdx].clues[o.userData.cid];if(!cl)return;SFX.click();
+  if(cl.uvOnly&&!uvMode)return;
+  if(cl.isKeypad){openKP();return}
+  toast(cl.name,cl.tag,cl.desc);
+  if(!found[ROOMS[roomIdx].id].has(o.userData.cid)){
+    found[ROOMS[roomIdx].id].add(o.userData.cid);SFX.clue();
+    if(cl.item)pickup(cl.item);
+    addTag(cl.name,cl.uvOnly);updatePips();buildMM();buildDos();
+    if(found[ROOMS[roomIdx].id].size===3)roomDone();
   }
 }
 
-function updateLook() {
-  camera.rotation.order = 'YXZ';
-  camera.rotation.y = yaw;
-  camera.rotation.x = pitch;
+/* ══ UI ══════════════════════════════════════════════════════ */
+function toast(t,g,d){const e=document.getElementById('toast');
+  document.getElementById('tt').innerText=t;document.getElementById('tg').innerText=g;
+  document.getElementById('td').innerText=d;e.style.display='block';
+  if(toastT)clearTimeout(toastT);toastT=setTimeout(()=>e.style.display='none',5000)}
+function addTag(n,u){const l=document.getElementById('evlog');
+  const d=document.createElement('div');d.className='et'+(u?' uv':'');
+  d.innerText=(u?'🔮 ':'🔍 ')+n;l.prepend(d);
+  if(l.children.length>4)l.removeChild(l.lastChild)}
+function pickup(it){inventory.push(it);const i=inventory.length-1;if(i>3)return;
+  const s=document.getElementById('s'+i);s.innerHTML=`<span style="font-size:1rem">${it.icon}</span><span>${it.label.slice(0,7)}</span>`;
+  s.className='is on';SFX.pickup()}
+function updatePips(){const r=ROOMS[roomIdx];const n=found[r.id].size;
+  document.getElementById('pl').innerText=`CLUES ${n}/3`;
+  const row=document.getElementById('pips');row.innerHTML='';
+  for(let i=0;i<3;i++){const p=document.createElement('div');
+    const cl=Object.values(r.clues)[i];
+    p.className='pip'+(i<n?(cl.isKeypad?' kp':' on'):'');row.appendChild(p)}
+  document.getElementById('ri').innerText=`ROOM ${roomIdx+1} / ${ROOMS.length}`}
+function roomDone(){const r=ROOMS[roomIdx];
+  document.getElementById('lt').innerText='ROOM CLEARED';
+  document.getElementById('ld').innerText=`All evidence secured in: ${r.name}`;
+  document.getElementById('lgr').innerText='⭐⭐⭐';
+  document.getElementById('ln').style.display=roomIdx<ROOMS.length-1?'inline-block':'none';
+  document.getElementById('lc').style.display='flex';document.exitPointerLock()}
+function nextRoom(){document.getElementById('lc').style.display='none';
+  if(roomIdx<ROOMS.length-1){roomIdx++;loadRoom(roomIdx);
+    document.getElementById('cv').requestPointerLock()}}
+function replayRoom(){document.getElementById('lc').style.display='none';
+  found[ROOMS[roomIdx].id]=new Set();inventory=[];
+  for(let i=0;i<4;i++){const s=document.getElementById('s'+i);s.innerHTML='<span>—</span>';s.className='is'}
+  loadRoom(roomIdx);document.getElementById('cv').requestPointerLock()}
+
+/* ══ KEYPAD ══════════════════════════════════════════════════ */
+function openKP(){kpBuf='';updKP();document.getElementById('kperr').innerText='';
+  document.getElementById('km').style.display='flex';kpActive=true;document.exitPointerLock()}
+function closeKP(){document.getElementById('km').style.display='none';kpActive=false;
+  document.getElementById('cv').requestPointerLock()}
+function kp(n){if(kpBuf.length<4){kpBuf+=n;SFX.beep();updKP()}}
+function kpClr(){kpBuf='';SFX.beep();updKP();document.getElementById('kperr').innerText=''}
+function updKP(){document.getElementById('kpd').innerText=(kpBuf+'____').slice(0,4).split('').join(' ')}
+function kpSub(){const r=ROOMS[roomIdx];if(!r.code){closeKP();return}
+  if(kpBuf===r.code){SFX.unlock();SFX.door();closeKP();
+    const cid=Object.keys(r.clues).find(k=>r.clues[k].isKeypad);
+    if(cid&&!found[r.id].has(cid)){found[r.id].add(cid);addTag(r.clues[cid].name,false);updatePips();buildMM();buildDos();
+      if(found[r.id].size===3)setTimeout(roomDone,800)}
+    openDoor()}else{SFX.err();document.getElementById('kperr').innerText='✗ ACCESS DENIED';
+    document.getElementById('kpd').innerText='E R R';
+    setTimeout(()=>{kpBuf='';updKP();document.getElementById('kperr').innerText=''},900)}}
+function openDoor(){const d=scene.getObjectByName('exitDoor');if(!d)return;
+  let p=0;const s=d.rotation.y;
+  (function a(){p+=.025;d.rotation.y=s-Math.PI/2*Math.min(p,1);if(p<1)requestAnimationFrame(a)})()}
+
+/* ══ OVERLAYS ═════════════════════════════════════════════════ */
+function toggleOverlay(v){overlayOpen=v;
+  document.getElementById('ov-mm').style.display=v==='mindmap'?'flex':'none';
+  document.getElementById('ov-dos').style.display=v==='dossier'?'flex':'none';
+  const show3d=!v;['hud','bot','radar','aip','xh','ap','vig','tabs'].forEach(id=>
+    {const e=document.getElementById(id);if(e)e.style.visibility=show3d?'visible':'hidden'});
+  if(v==='mindmap')buildMM();if(v==='dossier')buildDos()}
+
+/* ══ MIND MAP ════════════════════════════════════════════════ */
+function buildMM(){
+  const svg=document.getElementById('mmsvg');const r=ROOMS[roomIdx];
+  const keys=Object.keys(r.clues);const n=found[r.id].size;
+  const cx=450,cy=250;
+  const nodes=[{x:cx,y:cy,r:50,col:'#ff2a5f',label:'SUSPECT',sub:'Dr. Thorne'}];
+  keys.forEach((k,i)=>{const a=(i/keys.length)*Math.PI*2-Math.PI/2;
+    const cl=r.clues[k];
+    nodes.push({x:cx+Math.cos(a)*220,y:cy+Math.sin(a)*160,r:42,
+      col:cl.uvOnly?'#a000ff':cl.isKeypad?'#ffcc00':'#00f0ff',
+      label:cl.name.split(' ').slice(0,2).join(' '),sub:k})});
+  let h=`<defs><pattern id="g" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0L0 0 0 30" fill="none" stroke="rgba(0,240,255,.06)" stroke-width="1"/></pattern></defs><rect width="900" height="500" fill="url(#g)"/>`;
+  for(let i=1;i<nodes.length;i++)
+    h+=`<line x1="${nodes[0].x}" y1="${nodes[0].y}" x2="${nodes[i].x}" y2="${nodes[i].y}" stroke="#ff2a5f" stroke-width="2" stroke-dasharray="5 3" opacity="${i<=n+1?.7:.2}"/>`;
+  nodes.forEach((nd,i)=>{
+    const found=i===0||i<=n+1;
+    h+=`<g opacity="${found?1:.3}"><circle cx="${nd.x}" cy="${nd.y}" r="${nd.r}" fill="rgba(8,12,20,.85)" stroke="${nd.col}" stroke-width="2"/>
+    <circle cx="${nd.x}" cy="${nd.y}" r="${nd.r+5}" fill="none" stroke="${nd.col}" stroke-width=".5" opacity=".3"/>
+    <text x="${nd.x}" y="${nd.y+4}" fill="${nd.col}" font-size="10" text-anchor="middle" font-family="JetBrains Mono">${nd.label}</text>
+    <text x="${nd.x}" y="${nd.y+nd.r+12}" fill="rgba(255,255,255,.35)" font-size="8" text-anchor="middle" font-family="JetBrains Mono">${nd.sub}</text></g>`});
+  h+=`<rect x="790" y="10" width="100" height="26" rx="4" fill="rgba(0,240,255,.1)" stroke="rgba(0,240,255,.3)"/>
+    <text x="840" y="28" fill="#00f0ff" font-size="10" text-anchor="middle" font-family="JetBrains Mono">${n}/3 CLUES</text>`;
+  svg.innerHTML=h;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   UV TOGGLE
-═══════════════════════════════════════════════════════════════ */
-function toggleUV() {
-  uvMode = !uvMode; SFX.uv();
-  document.getElementById('vig').className = uvMode ? 'uv' : '';
-  document.getElementById('torch').className = uvMode ? 'on uv-on' : 'on';
-  document.getElementById('tmode').className = uvMode ? 'uv-on' : '';
-  document.getElementById('tmode').innerText = uvMode ? '🔮 UV LIGHT' : '🔦 WHITE';
-  // toggle visibility of UV meshes
-  iObjs.forEach(o => {
-    const room = ROOMS[roomIdx];
-    const cl = room.clues[o.userData.cid];
-    if (cl && cl.uvOnly) {
-      o.material.opacity = uvMode ? .85 : .0;
-    }
-  });
-  dust.material.color.set(uvMode ? 0xcc00ff : 0x8899bb);
-  dust.material.opacity = uvMode ? .45 : .22;
-  // update scene lighting colour
-  if (scene.__uvSpot) scene.__uvSpot.visible = uvMode;
-  if (scene.__whiteSpot) scene.__whiteSpot.visible = !uvMode;
+/* ══ DOSSIER ═════════════════════════════════════════════════ */
+function buildDos(){
+  const rb=document.getElementById('rbr');rb.innerHTML='';
+  const n=found[ROOMS[roomIdx].id].size;
+  for(let i=0;i<3;i++){const b=document.createElement('div');b.className='rb'+(i<n?' on':'');rb.appendChild(b)}
+  const rg=document.getElementById('rg');
+  rg.innerText=n===3?'S — EXPERT':n===2?'A — SKILLED':n===1?'B — DEVELOPING':'C — NOVICE';
+  rg.style.color=n===3?'var(--green)':n===2?'var(--cyan)':n===1?'var(--yellow)':'var(--red)';
+  const ws=document.getElementById('wbs');ws.innerHTML='';document.getElementById('wbr').innerText='';wbSel=[];
+  if(inventory.length===0){ws.innerHTML='<span style="color:var(--muted);font-size:.7rem">No items yet.</span>';return}
+  inventory.forEach((it,i)=>{const s=document.createElement('div');s.className='wbs';s.innerText=it.icon;s.title=it.label;
+    s.onclick=()=>{if(wbSel.find(x=>x.i===i)){wbSel=wbSel.filter(x=>x.i!==i);s.classList.remove('sel')}
+      else if(wbSel.length<2){wbSel.push({i,it});s.classList.add('sel')}
+      if(wbSel.length===2)wbCombine()};ws.appendChild(s)})}
+function wbCombine(){const l=wbSel.map(s=>s.it.label).sort().join('+');
+  const combos={'Memory Module+Scalpel':'🔓 Neural Archive Key — Vault B access unlocked!',
+    'NRX-7 Solvent+Scalpel':'🧫 Forensic Sample — DNA trace confirmed.',
+    'Memory Module+NRX-7 Solvent':'💉 Drive Cleaned — file recovery 87%.'};
+  document.getElementById('wbr').innerText=combos[l]||'❓ No reaction. Try different items.';SFX.clue()}
+
+/* ══ RADAR ══════════════════════════════════════════════════ */
+let ra=0;
+function drawRadar(){
+  const c=document.getElementById('rc');if(!c)return;
+  const ctx=c.getContext('2d'),W=c.width,H=c.height,cx=W/2,cy=H/2,R=Math.min(W,H)/2-6;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='rgba(0,0,0,.8)';
+  ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.fill();
+  [.3,.6,.9].forEach(f=>{ctx.strokeStyle=`rgba(0,240,255,${f*.15+.05})`;ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(cx,cy,R*f,0,Math.PI*2);ctx.stroke()});
+  ctx.strokeStyle='rgba(0,240,255,.12)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cx-R,cy);ctx.lineTo(cx+R,cy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,cy-R);ctx.lineTo(cx,cy+R);ctx.stroke();
+  ra+=.022;ctx.save();ctx.translate(cx,cy);ctx.rotate(ra);
+  ctx.strokeStyle='rgba(0,240,255,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(R,0);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,R,-.7,0,false);ctx.closePath();
+  ctx.fillStyle='rgba(0,240,255,.04)';ctx.fill();ctx.restore();
+  ctx.strokeStyle='rgba(0,240,255,.4)';ctx.lineWidth=1.5;ctx.strokeRect(cx-R*.82,cy-R*.82,R*1.64,R*1.64);
+  const blips=[{x:.3,y:-.4},{x:-.4,y:.3},{x:0,y:-.65}];
+  blips.forEach((b,i)=>{const bx=cx+b.x*R,by=cy+b.y*R;const p=.5+.5*Math.sin(Date.now()*.004);
+    const f=i<found[ROOMS[roomIdx].id].size;
+    ctx.fillStyle=f?`rgba(0,255,136,${.6+p*.4})`:`rgba(255,42,95,${.4+p*.4})`;
+    ctx.beginPath();ctx.arc(bx,by,3.5,0,Math.PI*2);ctx.fill();
+    if(!f){ctx.strokeStyle=`rgba(255,42,95,${.3*p})`;ctx.beginPath();ctx.arc(bx,by,4+7*p,0,Math.PI*2);ctx.stroke()}});
+  ctx.fillStyle='#00ff88';ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#00ff88';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,8,0,Math.PI*2);ctx.stroke();
+  const yaw2=yaw||0;ctx.save();ctx.translate(cx,cy);ctx.rotate(yaw2);
+  ctx.strokeStyle='rgba(0,255,136,.8)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-12);ctx.stroke();ctx.restore();
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   INTERACTION — RAYCAST FROM SCREEN CENTRE
-═══════════════════════════════════════════════════════════════ */
-const _rc = new THREE.Raycaster();
-const _centre = new THREE.Vector2(0, 0);
-function updateRaycast() {
-  _rc.setFromCamera(_centre, camera);
-  _rc.far = 3.2;
-  const hits = _rc.intersectObjects(iObjs, true);
-  const xh = document.getElementById('xh');
-  const ap = document.getElementById('ap');
+/* ══ AI CHAT ═════════════════════════════════════════════════ */
+const AI_KB=[
+{keys:['hint','help','stuck'],r:'Toggle UV with [F] — hidden fluorescent clues only appear under blacklight. Check the walls.'},
+{keys:['code','passcode','password'],r:'Use UV mode [F] and scan the rear wall. The 4-digit code is in fluorescent inscription.'},
+{keys:['uv','blacklight','ultraviolet'],r:'Press [F] to toggle UV. UV-only evidence glows purple and is invisible in white-light.'},
+{keys:['suspect','thorne','who','killer'],r:'Dr. Aris Thorne — neural-implant specialist. Last authenticated at 03:14. Handwriting matches UV cipher.'},
+{keys:['keypad','door','lock','override'],r:'Find the UV cipher first — it reveals the 4-digit code. Enter it at the keypad door to advance.'},
+{keys:['inventory','item','pickup'],r:'Interactive objects add items to your inventory. Combine items in the Dossier workbench.'},
+{keys:['workbench','combine','craft'],r:'Open DOSSIER tab → Item Workbench. Select two items to combine.'},
+{keys:['mindmap','board','connect'],r:'Open MIND MAP tab (or press TAB) — evidence nodes link to the suspect with red thread.'},
+{keys:['radar','map','minimap'],r:'The radar shows your position, clue blips (red=undiscovered, green=found), and door locations.'},
+{keys:['dossier','file','report','case'],r:'Open DOSSIER for suspect profiles, redacted intel, your grade, and the item workbench.'},
+{keys:['level','advance','next','progress'],r:'Find all 3 clues, then enter the keypad code to unlock the exit and advance.'}];
+function aiReply(q){q=q.toLowerCase();
+  if(q.includes('code')||q.includes('passcode'))return`Clue: UV mode [F] reveals the code on the wall. Current room: L${roomIdx+1}.`;
+  for(const k of AI_KB)if(k.keys.some(x=>q.includes(x)))return k.r;
+  return`Forensic AI online. Clues: ${found[ROOMS[roomIdx].id].size}/3. Ask about 'UV', 'suspects', 'keypad', 'hints', or 'workbench'.`}
+function sendChat(){const i=document.getElementById('ci');const t=i.value.trim();if(!t)return;
+  i.value='';addChat(t,'usr');setTimeout(()=>addChat(aiReply(t),'bot'),380)}
+function addChat(m,w){const l=document.getElementById('cl');
+  const d=document.createElement('div');d.className='cm '+w;d.innerText=m;
+  l.appendChild(d);l.scrollTop=l.scrollHeight}
 
-  if (hits.length > 0) {
-    let obj = hits[0].object;
-    while (obj && !obj.userData.cid && obj.parent) obj = obj.parent;
-    if (!obj || !obj.userData.cid) { hObj = null; xh.className = ''; ap.style.display = 'none'; return; }
-    const room = ROOMS[roomIdx];
-    const cl = room.clues[obj.userData.cid];
-    if (cl && cl.uvOnly && !uvMode) { hObj = null; xh.className = ''; ap.style.display = 'none'; return; }
-    hObj = obj;
-    xh.className = uvMode ? 'uv-hit' : 'hit';
-    ap.style.display = 'block';
-    ap.innerText = (cl && cl.isKeypad) ? '[ E ] KEYPAD' : `[ E ] ${cl ? cl.name : 'Examine'}`;
-  } else {
-    hObj = null; xh.className = ''; ap.style.display = 'none';
-  }
-}
+/* ══ SCENE HELPERS ════════════════════════════════════════════ */
+function clrScene(){while(scene.children.length)scene.remove(scene.children[0]);
+  while(camera&&camera.children.length)camera.remove(camera.children[0]);
+  iObjs=[];fl=[];scene.__uvSpot=null;scene.__wSpot=null}
+function M(o){return new THREE.MeshStandardMaterial(o)}
+function BM(o){return new THREE.MeshBasicMaterial(o)}
+function mesh(g,m,px,py,pz,rx,ry,rz){const x=new THREE.Mesh(g,m);
+  if(px!==undefined)x.position.set(px,py,pz);if(rx!==undefined)x.rotation.set(rx,ry||0,rz||0);
+  x.castShadow=x.receiveShadow=true;scene.add(x);return x}
+function iMesh(g,m,cid,px,py,pz,rx,ry,rz){const x=new THREE.Mesh(g,m);
+  if(px!==undefined)x.position.set(px,py,pz);if(rx!==undefined)x.rotation.set(rx,ry||0,rz||0);
+  x.userData.cid=cid;x.castShadow=true;scene.add(x);iObjs.push(x);return x}
+function pL(c,i,d,x,y,z,f){const l=new THREE.PointLight(c,i,d);l.position.set(x,y,z);scene.add(l);
+  if(f){l.__base=i;fl.push(l)}return l}
+function sL(c,i,x,y,z,tx,ty,tz){const l=new THREE.SpotLight(c,i);l.position.set(x,y,z);
+  l.target.position.set(tx,ty,tz);l.angle=Math.PI/4.5;l.penumbra=.55;
+  l.castShadow=true;l.shadow.mapSize.set(512,512);scene.add(l);scene.add(l.target);return l}
 
-function interact(obj) {
-  if (!obj) return;
-  const room = ROOMS[roomIdx];
-  const cid = obj.userData.cid;
-  const cl = room.clues[cid];
-  if (!cl) return;
-  SFX.click();
-  if (cl.uvOnly && !uvMode) return;
-  if (cl.isKeypad) { openKP(); return; }
-  showToast(cl.name, cl.tag, cl.desc);
-  if (!found[room.id].has(cid)) {
-    found[room.id].add(cid);
-    SFX.clue();
-    if (cl.item) pickupItem(cl.item);
-    addEvidenceTag(cl.name, cl.uvOnly);
-    updatePips();
-    if (found[room.id].size === CLUES_PER_ROOM) onRoomComplete();
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   UI HELPERS
-═══════════════════════════════════════════════════════════════ */
-function showToast(title, tag, desc) {
-  const t = document.getElementById('toast');
-  document.getElementById('ttitle').innerText = title;
-  document.getElementById('ttag').innerText = tag;
-  document.getElementById('tdesc').innerText = desc;
-  t.style.display = 'block';
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.style.display = 'none'; }, 5000);
-}
-
-function addEvidenceTag(name, isUV) {
-  const log = document.getElementById('evlog');
-  const d = document.createElement('div');
-  d.className = 'ev-tag' + (isUV ? ' uv' : '');
-  d.innerText = (isUV ? '🔮 ' : '🔍 ') + name;
-  log.prepend(d);
-  if (log.children.length > 4) log.removeChild(log.lastChild);
-}
-
-function pickupItem(it) {
-  inventory.push(it);
-  const idx = inventory.length - 1;
-  if (idx > 3) return;
-  const s = document.getElementById('s' + idx);
-  s.innerHTML = `<span style="font-size:1.1rem">${it.icon}</span><span>${it.label.slice(0, 8)}</span>`;
-  s.className = 'is on'; SFX.pickup();
-}
-
-function updatePips() {
-  const room = ROOMS[roomIdx];
-  const n = found[room.id].size;
-  document.getElementById('progLabel').innerText = `CLUES ${n}/${CLUES_PER_ROOM}`;
-  const row = document.getElementById('pips'); row.innerHTML = '';
-  for (let i = 0; i < CLUES_PER_ROOM; i++) {
-    const p = document.createElement('div');
-    const cl = Object.values(room.clues)[i];
-    p.className = 'pip' + (i < n ? (cl.isKeypad ? ' kp' : ' on') : '');
-    row.appendChild(p);
-  }
-  document.getElementById('roomind').innerText = `ROOM ${roomIdx + 1} / ${ROOMS.length}`;
-}
-
-function onRoomComplete() {
-  const room = ROOMS[roomIdx];
-  const lc = document.getElementById('lvlcmp');
-  document.getElementById('lcTitle').innerText = 'ROOM CLEARED';
-  document.getElementById('lcDesc').innerText = `All evidence secured in: ${room.name}`;
-  document.getElementById('lcgrade').innerText = '⭐⭐⭐';
-  document.getElementById('lcNext').style.display = roomIdx < ROOMS.length - 1 ? 'inline-block' : 'none';
-  lc.style.display = 'flex';
-  document.exitPointerLock();
-}
-
-function nextRoom() {
-  document.getElementById('lvlcmp').style.display = 'none';
-  if (roomIdx < ROOMS.length - 1) { roomIdx++; loadRoom(roomIdx); requestLock(); }
-}
-function replayRoom() {
-  document.getElementById('lvlcmp').style.display = 'none';
-  found[ROOMS[roomIdx].id] = new Set();
-  loadRoom(roomIdx); requestLock();
-}
-
-function exitGame(e) {
-  e.preventDefault(); document.exitPointerLock();
-  window.location.href = '/';
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   KEYPAD
-═══════════════════════════════════════════════════════════════ */
-function openKP() {
-  kpBuf = ''; updKPD(); document.getElementById('kperr').innerText = '';
-  document.getElementById('km').style.display = 'flex';
-  kpActive = true; document.exitPointerLock();
-}
-function closeKP() {
-  document.getElementById('km').style.display = 'none';
-  kpActive = false; requestLock();
-}
-function kp(n) {
-  if (kpBuf.length < 4) { kpBuf += n; SFX.beep(); updKPD(); }
-}
-function kpClr() { kpBuf = ''; SFX.beep(); updKPD(); document.getElementById('kperr').innerText = ''; }
-function updKPD() {
-  document.getElementById('kpd').innerText = (kpBuf + '____').slice(0, 4).split('').join(' ');
-}
-function kpSub() {
-  const room = ROOMS[roomIdx];
-  if (!room.code) { closeKP(); return; }
-  if (kpBuf === room.code) {
-    SFX.unlock(); SFX.door();
-    closeKP();
-    const cid = Object.keys(room.clues).find(k => room.clues[k].isKeypad);
-    if (cid && !found[room.id].has(cid)) {
-      found[room.id].add(cid);
-      addEvidenceTag(room.clues[cid].name, false);
-      updatePips();
-      if (found[room.id].size === CLUES_PER_ROOM) { setTimeout(onRoomComplete, 800); }
-    }
-    // open door visually
-    openDoorAnim();
-  } else {
-    SFX.err();
-    document.getElementById('kperr').innerText = '✗ ACCESS DENIED';
-    document.getElementById('kpd').innerText = 'E R R';
-    setTimeout(() => { kpBuf = ''; updKPD(); document.getElementById('kperr').innerText = ''; }, 900);
-  }
-}
-function openDoorAnim() {
-  const door = scene.getObjectByName('exitDoor');
-  if (!door) return;
-  const start = door.rotation.y;
-  let prog = 0;
-  const anim = () => {
-    prog += .03; door.rotation.y = start - Math.PI / 2 * Math.min(prog, 1);
-    if (prog < 1) requestAnimationFrame(anim);
-  };
-  anim();
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   SCENE BUILDING HELPERS
-═══════════════════════════════════════════════════════════════ */
-function clrScene() {
-  while (scene.children.length) scene.remove(scene.children[0]);
-  iObjs = []; flickerLights = [];
-  scene.__uvSpot = null; scene.__whiteSpot = null;
-}
-
-function M(opts) { return new THREE.MeshStandardMaterial(opts); }
-function BM(opts) { return new THREE.MeshBasicMaterial(opts); }
-
-function mesh(geo, mat, px = 0, py = 0, pz = 0, rx = 0, ry = 0, rz = 0) {
-  const m = new THREE.Mesh(geo, mat);
-  m.position.set(px, py, pz); m.rotation.set(rx, ry, rz);
-  m.castShadow = m.receiveShadow = true;
-  scene.add(m); return m;
-}
-
-function iMesh(geo, mat, cid, px = 0, py = 0, pz = 0, rx = 0, ry = 0, rz = 0) {
-  const m = new THREE.Mesh(geo, mat);
-  m.position.set(px, py, pz); m.rotation.set(rx, ry, rz);
-  m.userData.cid = cid; m.castShadow = true;
-  scene.add(m); iObjs.push(m); return m;
-}
-
-function pLight(col, int, dist, x, y, z, flicker = false) {
-  const l = new THREE.PointLight(col, int, dist);
-  l.position.set(x, y, z);
-  scene.add(l);
-  if (flicker) flickerLights.push(l);
-  return l;
-}
-
-function sLight(col, int, x, y, z, tx, ty, tz, shadows = true) {
-  const l = new THREE.SpotLight(col, int);
-  l.position.set(x, y, z);
-  l.target.position.set(tx, ty, tz);
-  l.angle = Math.PI / 4.5; l.penumbra = .55;
-  if (shadows) { l.castShadow = true; l.shadow.mapSize.set(512, 512); }
-  scene.add(l); scene.add(l.target);
-  return l;
-}
-
-// procedural textures
-function tileTex(baseCol = '#11161d', lineCol = '#1e2d40', rpt = 6) {
-  const c = document.createElement('canvas'); c.width = c.height = 256;
-  const x = c.getContext('2d');
-  x.fillStyle = baseCol; x.fillRect(0, 0, 256, 256);
-  x.strokeStyle = lineCol; x.lineWidth = 1.5;
-  const s = 256 / rpt;
-  for (let i = 0; i <= rpt; i++) {
-    x.beginPath(); x.moveTo(i * s, 0); x.lineTo(i * s, 256); x.stroke();
-    x.beginPath(); x.moveTo(0, i * s); x.lineTo(256, i * s); x.stroke();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rpt, rpt); return t;
-}
-
-function woodTex() {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
-  const x = c.getContext('2d');
-  x.fillStyle = '#3a2310'; x.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 35; i++) {
-    x.strokeStyle = `rgba(${80 + Math.random() * 40},${40 + Math.random() * 20},${10 + Math.random() * 15},.42)`;
-    x.lineWidth = .8 + Math.random() * 1.6;
-    x.beginPath(); x.moveTo(0, i * 7.5 + Math.random() * 5); x.lineTo(256, i * 7.5 + Math.random() * 8); x.stroke();
-  }
-  return new THREE.CanvasTexture(c);
-}
-
-function stoneTex(dark = true) {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
-  const x = c.getContext('2d');
-  x.fillStyle = dark ? '#13161a' : '#22272e'; x.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 300; i++) {
-    x.fillStyle = `rgba(${30 + Math.random() * 25},${30 + Math.random() * 25},${32 + Math.random() * 25},.7)`;
-    x.fillRect(Math.random() * 256, Math.random() * 256, 1 + Math.random() * 5, 1 + Math.random() * 5);
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3); return t;
-}
-
-function checkerTex() {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
-  const x = c.getContext('2d');
-  const s = 32;
-  for (let r = 0; r < 8; r++) for (let cc = 0; cc < 8; cc++) {
-    x.fillStyle = (r + cc) % 2 === 0 ? '#111111' : '#e8e4d8';
-    x.fillRect(cc * s, r * s, s, s);
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 2); return t;
-}
+/* procedural textures */
+function tileTex(b,l,r){const c=document.createElement('canvas');c.width=c.height=256;
+  const x=c.getContext('2d');x.fillStyle=b;x.fillRect(0,0,256,256);x.strokeStyle=l;x.lineWidth=1.5;
+  const s=256/r;for(let i=0;i<=r;i++){x.beginPath();x.moveTo(i*s,0);x.lineTo(i*s,256);x.stroke();
+    x.beginPath();x.moveTo(0,i*s);x.lineTo(256,i*s);x.stroke()}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(r,r);return t}
+function woodTex(){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+  x.fillStyle='#3a2310';x.fillRect(0,0,256,256);
+  for(let i=0;i<35;i++){x.strokeStyle=`rgba(${80+Math.random()*40},${40+Math.random()*20},${10+Math.random()*15},.4)`;
+    x.lineWidth=.8+Math.random()*1.6;x.beginPath();x.moveTo(0,i*7.5+Math.random()*5);x.lineTo(256,i*7.5+Math.random()*8);x.stroke()}
+  return new THREE.CanvasTexture(c)}
+function stoneTex(d){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+  x.fillStyle=d?'#13161a':'#22272e';x.fillRect(0,0,256,256);
+  for(let i=0;i<300;i++){x.fillStyle=`rgba(${30+Math.random()*25},${30+Math.random()*25},${32+Math.random()*25},.7)`;
+    x.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*5,1+Math.random()*5)}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,3);return t}
+function chkTex(){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');const s=32;
+  for(let r=0;r<8;r++)for(let cc=0;cc<8;cc++){x.fillStyle=(r+cc)%2===0?'#111111':'#e0dcd0';x.fillRect(cc*s,r*s,s,s)}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);return t}
 
 /* room shell */
-function buildShell(floorMat, wallMat, ceilMat, W = 12, D = 14, H = 5.5) {
-  mesh(new THREE.PlaneGeometry(W, D), floorMat, 0, 0, 0, -Math.PI / 2, 0, 0);
-  mesh(new THREE.PlaneGeometry(W, H), wallMat, 0, H / 2, -D / 2);
-  mesh(new THREE.PlaneGeometry(D, H), wallMat, -W / 2, H / 2, 0, 0, Math.PI / 2, 0);
-  mesh(new THREE.PlaneGeometry(D, H), wallMat, W / 2, H / 2, 0, 0, -Math.PI / 2, 0);
-  mesh(new THREE.PlaneGeometry(W, H), wallMat, 0, H / 2, D / 2, 0, Math.PI, 0);
-  mesh(new THREE.PlaneGeometry(W, D), ceilMat, 0, H, 0, Math.PI / 2, 0, 0);
+function shell(fm,wm,cm,W,D,H){
+  mesh(new THREE.PlaneGeometry(W,D),fm,0,0,0,-Math.PI/2,0,0);
+  mesh(new THREE.PlaneGeometry(W,H),wm,0,H/2,-D/2);
+  mesh(new THREE.PlaneGeometry(D,H),wm,-W/2,H/2,0,0,Math.PI/2,0);
+  mesh(new THREE.PlaneGeometry(D,H),wm,W/2,H/2,0,0,-Math.PI/2,0);
+  mesh(new THREE.PlaneGeometry(W,H),wm,0,H/2,D/2,0,Math.PI,0);
+  mesh(new THREE.PlaneGeometry(W,D),cm,0,H,0,Math.PI/2,0,0)}
+
+function exitDoor(r){
+  const hc=!!r.code;
+  const dm=M({color:hc?0x2a3a2a:0x1a1a1a,metalness:.4,roughness:.4,emissive:hc?0x004400:0x001a00,emissiveIntensity:.2});
+  const d=new THREE.Mesh(new THREE.BoxGeometry(2.2,3.2,.14),dm);
+  d.name='exitDoor';d.position.set(0,1.6,-6.93);d.castShadow=true;scene.add(d);
+  iObjs.push(d);d.userData.cid=Object.keys(r.clues).find(k=>r.clues[k].isKeypad)||'S1C';
+  const led=new THREE.Mesh(new THREE.SphereGeometry(.045),BM({color:hc?0xff0000:0x00ff44}));
+  led.position.set(.7,2.0,-6.86);scene.add(led);
+  if(r.id===5)for(let b=0;b<3;b++)mesh(new THREE.BoxGeometry(2.4,.13,.06),M({color:0x2a1e10,roughness:.9}),0,.9+b*.9,-6.86)}
+
+function uvP(cid,w,h,c,x,y,z,rx,ry){return iMesh(new THREE.PlaneGeometry(w,h),
+  BM({color:c,transparent:true,opacity:0,side:THREE.DoubleSide}),cid,x,y,z,rx||0,ry||0,0)}
+
+/* ══ LOAD ROOM ════════════════════════════════════════════════ */
+function loadRoom(idx){
+  clrScene();const r=ROOMS[idx];
+  document.getElementById('rl').innerText=r.name;
+  scene.background=new THREE.Color(r.bg);
+  scene.fog=new THREE.FogExp2(r.bg,r.fog);
+  const sp=r.start;camera.position.set(sp[0],sp[1],sp[2]);yaw=0;pitch=0;
+  scene.add(dust);scene.add(camera);
+
+  // KEY: Hemisphere light for guaranteed visibility (no env map needed)
+  scene.add(new THREE.HemisphereLight(0x445566,0x0a0a10,.6));
+  // Ambient light boost
+  scene.add(new THREE.AmbientLight(r.amb[0],r.amb[1]));
+
+  // Flashlight (white) attached to camera
+  const fl=new THREE.SpotLight(0xfff8e8,3.5,14,Math.PI/5,.45);
+  fl.position.set(0,0,.3);fl.target.position.set(0,0,-1);
+  camera.add(fl);camera.add(fl.target);scene.__wSpot=fl;
+  // UV spotlight attached to camera
+  const uv=new THREE.SpotLight(0xaa00ff,4.5,12,Math.PI/4,.5);uv.visible=false;
+  uv.position.set(0,0,.3);uv.target.position.set(0,0,-1);
+  camera.add(uv);camera.add(uv.target);scene.__uvSpot=uv;
+
+  // Reset UV
+  uvMode=false;document.getElementById('vig').className='';
+  document.getElementById('tmode').className='';document.getElementById('tmode').innerText='🔦 WHITE';
+  dust.material.color.set(0x99aabb);dust.material.opacity=.25;
+
+  switch(r.id){case 1:bVault(r);break;case 2:bCorridor(r);break;case 3:bKitchen(r);break;
+    case 4:bLibrary(r);break;case 5:bRed(r);break;case 6:bGallery(r);break;case 7:bBath(r);break}
+  exitDoor(r);updatePips();document.getElementById('evlog').innerHTML='';
 }
 
-function addExitDoor(room) {
-  const hasCode = !!room.code;
-  const doorMat = M({ color: hasCode ? 0x2a3a2a : 0x1a1a1a, metalness: .8, roughness: .3, emissive: hasCode ? 0x004400 : 0x001a00, emissiveIntensity: .2 });
-  const door = new THREE.Mesh(new THREE.BoxGeometry(2.2, 3.2, .14), doorMat);
-  door.name = 'exitDoor'; door.position.set(0, 1.6, -6.93);
-  door.castShadow = true; scene.add(door);
-  iObjs.push(door); door.userData.cid = Object.keys(room.clues).find(k => room.clues[k].isKeypad) || 'S1C';
-  // LED
-  const led = new THREE.Mesh(new THREE.SphereGeometry(.045), BM({ color: hasCode ? 0xff0000 : 0x00ff44 }));
-  led.position.set(.7, 2.0, -6.86); scene.add(led);
-  // boards for barricaded rooms (5)
-  if (room.id === 5) {
-    for (let b = 0; b < 3; b++) {
-      mesh(new THREE.BoxGeometry(2.4, .13, .06), M({ color: 0x2a1e10, roughness: .9 }), 0, .9 + b * .9, -6.86);
-    }
-  }
+/* ── ROOM 1: Surgical Vault ── */
+function bVault(r){
+  sL(0xaaccff,5,0,5.5,.5,0,.7,0);pL(0xff1133,1.6,10,-4.5,2.8,-4.5);pL(0x336688,.8,10,4,1.5,3);
+  shell(M({map:tileTex('#101520','#1e2d40',8),roughness:.4,metalness:.15}),M({color:0x0d1218,roughness:.85}),M({color:0x080c12,roughness:.9}));
+  scene.add(new THREE.GridHelper(12,24,0x00f0ff,0x162030));
+  mesh(new THREE.CylinderGeometry(.4,.5,.65,16),M({color:0x222a38,metalness:.4,roughness:.3}),0,.325,0);
+  iMesh(new THREE.BoxGeometry(1.3,.1,2.6),M({color:0x3a4a5e,metalness:.3,roughness:.4}),'S1A',0,.7,0);
+  const ck=new THREE.Mesh(new THREE.PlaneGeometry(.85,1.9),BM({color:0xffffff,transparent:true,opacity:.3,wireframe:true}));
+  ck.rotation.x=-Math.PI/2;ck.position.set(0,.755,0);scene.add(ck);
+  mesh(new THREE.CylinderGeometry(.04,.04,1.3),M({color:0x333d4a,metalness:.5}),0,4.85,.5);
+  iMesh(new THREE.CylinderGeometry(.75,.85,.22,24),M({color:0x4a5a72,metalness:.4,roughness:.3,emissive:0x001122,emissiveIntensity:.3}),'S1B',0,4.2,.5);
+  const gr=new THREE.Mesh(new THREE.TorusGeometry(.62,.035,8,48),BM({color:0xaaccff,transparent:true,opacity:.4}));gr.position.set(0,4.1,.5);scene.add(gr);
+  pL(0xaaccff,1.2,5,0,3.8,.5,true);
+  uvP('S1B',1.7,.75,0xdd00ff,-2.5,2.2,-5.88);
+  mesh(new THREE.BoxGeometry(.75,.85,.55),M({color:0x1c2530,metalness:.2,roughness:.4}),2.5,.425,.8);
+  mesh(new THREE.BoxGeometry(.75,.03,.55),M({color:0x283445,metalness:.3}),2.5,.86,.8);
+  for(let i=0;i<3;i++)mesh(new THREE.CylinderGeometry(.04,.04,.14,8),M({color:0x44aacc,roughness:.15,transparent:true,opacity:.7}),2.2+i*.18,.97,.8);
+  for(let i=0;i<2;i++){mesh(new THREE.BoxGeometry(.8,2.2,.5),M({color:0x0d1825,metalness:.3,roughness:.4}),4.8+i,1.1,-4.5);
+    for(let j=0;j<6;j++){const l=new THREE.Mesh(new THREE.SphereGeometry(.032),BM({color:j%3===0?0x00ff88:0xff2a5f}));l.position.set(4.8+i+.32,.3+j*.32,-4.23);scene.add(l)}}
+  iMesh(new THREE.BoxGeometry(.35,.25,.04),M({color:0x1a2535,metalness:.4,emissive:0xff2a5f,emissiveIntensity:.5}),'S1C',-5.93,1.7,-1.5,0,Math.PI/2,0);
 }
 
-function uvHiddenPlane(cid, w, h, col, px, py, pz, rx = 0, ry = 0) {
-  const mat = BM({ color: col, transparent: true, opacity: .0, side: THREE.DoubleSide });
-  return iMesh(new THREE.PlaneGeometry(w, h), mat, cid, px, py, pz, rx, ry, 0);
+/* ── ROOM 2: Overgrown Corridor ── */
+function bCorridor(r){
+  pL(0x00cc66,2.2,14,-2,2.8,-1);pL(0x224433,1,10,2,1.5,-5);sL(0x88ffcc,1.8,0,5.5,-5,0,1,-8,false);
+  shell(M({color:0x0f1714,roughness:.75}),M({color:0x0c1410,roughness:.9}),M({color:0x08100d,roughness:.95}),10,14,5.5);
+  for(let z=0;z>-12;z-=3){const a=new THREE.Mesh(new THREE.TorusGeometry(2.6,.12,6,20,Math.PI),M({color:0x1a2e20,roughness:.9}));
+    a.position.set(0,3,z);a.rotation.y=Math.PI/2;scene.add(a)}
+  for(let z=0;z>-11;z-=3.5){
+    iMesh(new THREE.BoxGeometry(.7,5,.7),M({color:0x1b2d24,roughness:.9}),'S2A',-2.2,2.5,z);
+    mesh(new THREE.BoxGeometry(.7,5,.7),M({color:0x1b2d24,roughness:.9}),2.2,2.5,z);
+    for(let v=0;v<4;v++){const vn=new THREE.Mesh(new THREE.CylinderGeometry(.022,.015,1.2+v*.35),M({color:0x2a4a22,roughness:1}));
+      vn.position.set(-2.2+(Math.random()-.5)*.25,1.2+v*.9,z+(Math.random()-.5)*.25);vn.rotation.z=(Math.random()-.5)*.7;scene.add(vn)}}
+  const sh=new THREE.Mesh(new THREE.CylinderGeometry(.05,.55,5),BM({color:0x88ffcc,transparent:true,opacity:.06}));sh.rotation.x=Math.PI/2;sh.position.set(0,.9,-9.5);scene.add(sh);
+  for(let i=0;i<7;i++)mesh(new THREE.BoxGeometry(.2+Math.random()*.4,.09,.15+Math.random()*.28),M({color:0x111613,roughness:.95}),(Math.random()-.5)*3.5,.045,-1.5-i*1.3);
+  uvP('S2B',1,.85,0x00ff88,4.3,1.55,-2.5,0,-Math.PI/2);
+  iMesh(new THREE.BoxGeometry(.3,.2,.04),M({color:0x1a2535,metalness:.4,emissive:0xff2a5f,emissiveIntensity:.5}),'S2C',4.85,1.7,-1.5,0,-Math.PI/2,0);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   LOAD ROOM
-═══════════════════════════════════════════════════════════════ */
-function loadRoom(idx) {
-  clrScene();
-  const room = ROOMS[idx];
-  document.getElementById('roomLabel').innerText = room.name;
-  scene.background = new THREE.Color(room.bg);
-  scene.fog = new THREE.FogExp2(room.bg, room.fogDen);
-  const cp = room.startPos;
-  camera.position.set(cp[0], cp[1], cp[2]);
-  yaw = 0; pitch = 0;
-
-  scene.add(dust);
-  scene.add(new THREE.AmbientLight(room.ambient[0], room.ambient[1]));
-
-  // UV spot (off by default)
-  const uvSpot = new THREE.SpotLight(0xaa00ff, 3.5, 8, Math.PI / 3.5, .5);
-  uvSpot.visible = false; scene.add(uvSpot); scene.add(uvSpot.target);
-  uvSpot.target.position.set(0, 0, -2); scene.__uvSpot = uvSpot;
-  camera.add(uvSpot); uvSpot.position.set(0, 0, 0);
-
-  if (uvMode) { uvMode = false; toggleUV(); } // reset UV
-
-  switch (room.id) {
-    case 1: buildSurgicalVault(room); break;
-    case 2: buildCorridor(room);      break;
-    case 3: buildKitchen(room);       break;
-    case 4: buildLibrary(room);       break;
-    case 5: buildRedRoom(room);       break;
-    case 6: buildGallery(room);       break;
-    case 7: buildBathroom(room);      break;
-  }
-
-  addExitDoor(room);
-  updatePips();
-  document.getElementById('evlog').innerHTML = '';
+/* ── ROOM 3: Safehouse Kitchen ── */
+function bKitchen(r){
+  const wt=woodTex(),st=stoneTex(true);
+  pL(0xffb700,3.2,10,-1.2,2.6,.5);pL(0xff8844,1,7,2,1.8,1.5);
+  shell(M({map:tileTex('#1a1812','#2a3020',6),roughness:.6}),M({map:st,roughness:.85}),M({color:0x2a2a20,roughness:.9}));
+  iMesh(new THREE.BoxGeometry(1.6,.08,1.1),M({map:wt,roughness:.65}),'S3A',-1.2,.72,.5);
+  for(const[a,b]of[[-.7,-.45],[-.7,.45],[.7,-.45],[.7,.45]])mesh(new THREE.BoxGeometry(.07,.72,.07),M({map:wt,roughness:.7}),-1.2+a,.36,.5+b);
+  for(const ox of[-.35,.15])mesh(new THREE.CylinderGeometry(.055,.045,.09,10),M({color:0xeeeeee,roughness:.4}),-1.2+ox,.81,.5);
+  mesh(new THREE.CylinderGeometry(.065,.065,.3,10),M({color:0x1a7a1a,roughness:.15,transparent:true,opacity:.75}),-1.2,.88,.5);
+  for(const ox of[-.5,.4]){mesh(new THREE.BoxGeometry(.5,.06,.4),M({map:wt,roughness:.7}),-1.2+ox,.55,.5);
+    mesh(new THREE.BoxGeometry(.5,.5,.05),M({map:wt,roughness:.7}),-1.2+ox,.8,.3);
+    for(const lx of[-.2,.2]){mesh(new THREE.BoxGeometry(.05,.55,.05),M({map:wt}),-1.2+ox+lx,.275,.5+.17);
+      mesh(new THREE.BoxGeometry(.05,.55,.05),M({map:wt}),-1.2+ox+lx,.275,.5-.17)}}
+  mesh(new THREE.CylinderGeometry(.02,.02,1.2),M({color:0x2a2a2a}),-1.2,4.7,.5);
+  mesh(new THREE.ConeGeometry(.3,.34,16),M({color:0x2e4a2e,roughness:.6}),-1.2,4.1,.5,Math.PI,0,0);
+  pL(0xffb700,1.8,5,-1.2,3.7,.5,true);
+  for(let sy=0;sy<2;sy++){mesh(new THREE.BoxGeometry(1.8,.04,.22),M({color:0x3a2a14,roughness:.7}),1.5,2.0+sy*.7,-4.9);
+    for(let j=0;j<4;j++)mesh(new THREE.CylinderGeometry(.045,.04,.12,8),M({color:0x334a33,roughness:.3}),1.0+j*.28,2.1+sy*.7,-4.9)}
+  for(let cx=0;cx<4;cx++)mesh(new THREE.BoxGeometry(.9,.75,.35),M({map:wt,roughness:.7}),-1.8+cx*1.1,2.0,-4.8);
+  mesh(new THREE.BoxGeometry(2.2,.8,.55),M({color:0x2a2a22,roughness:.5}),2.8,.4,-3.5);
+  mesh(new THREE.BoxGeometry(2.2,.04,.55),M({color:0x555544,metalness:.3,roughness:.4}),2.8,.82,-3.5);
+  mesh(new THREE.BoxGeometry(1.1,.75,.04),M({color:0x4a3a28,roughness:.7}),1.5,1.9,-4.88);
+  mesh(new THREE.PlaneGeometry(.95,.6),M({color:0x1a2a3a,roughness:.8}),1.5,1.9,-4.85);
+  uvP('S3B',.7,.45,0xaa00ff,-1.2,.77,.5,-Math.PI/2,0);
+  iMesh(new THREE.BoxGeometry(.95,.75,.35),M({color:0x2a1e10,roughness:.7,emissive:0xff2a5f,emissiveIntensity:.3}),'S3C',-1.8,2.0,-4.8);
+  const cl=new THREE.Mesh(new THREE.SphereGeometry(.04),BM({color:0xff0000}));cl.position.set(-1.38,2.25,-4.61);scene.add(cl);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ROOM 1 — SURGICAL VAULT
-═══════════════════════════════════════════════════════════════ */
-function buildSurgicalVault(room) {
-  const wm = M({ color: 0x0d1218, roughness: .85 });
-  buildShell(
-    M({ map: tileTex('#101520', '#1e2d40', 8), roughness: .32, metalness: .22 }),
-    wm,
-    M({ color: 0x080c12, roughness: .9 })
-  );
-  scene.add(new THREE.GridHelper(12, 24, 0x00f0ff, 0x162030));
-
-  // surgical spot
-  sLight(0xaaccff, 5.0, 0, 5.5, .5, 0, .7, 0);
-  pLight(0xff1133, 1.4, 9, -4.5, 2.8, -4.5);
-  pLight(0x003366, .6, 8, 4, 1.5, 3);
-
-  // table pedestal + top
-  mesh(new THREE.CylinderGeometry(.4, .5, .65, 16), M({ color: 0x222a38, metalness: .85, roughness: .2 }), 0, .325, 0);
-  iMesh(new THREE.BoxGeometry(1.3, .1, 2.6), M({ color: 0x3a4a5e, metalness: .65, roughness: .28 }), 'S1A', 0, .7, 0);
-  // chalk outline on table
-  const ck = new THREE.Mesh(new THREE.PlaneGeometry(.85, 1.9), BM({ color: 0xffffff, transparent: true, opacity: .28, wireframe: true }));
-  ck.rotation.x = -Math.PI / 2; ck.position.set(0, .755, 0); scene.add(ck);
-
-  // lamp arm + head
-  mesh(new THREE.CylinderGeometry(.04, .04, 1.3), M({ color: 0x333d4a, metalness: .8 }), 0, 4.85, .5);
-  iMesh(new THREE.CylinderGeometry(.75, .85, .22, 24), M({ color: 0x4a5a72, metalness: .92, roughness: .1, emissive: 0x001122, emissiveIntensity: .3 }), 'S1B', 0, 4.2, .5);
-  const gr = new THREE.Mesh(new THREE.TorusGeometry(.62, .035, 8, 48), BM({ color: 0xaaccff, transparent: true, opacity: .4 }));
-  gr.position.set(0, 4.1, .5); scene.add(gr);
-  pLight(0xaaccff, 1.2, 4, 0, 3.8, .5, true);
-
-  // UV cipher plane (hidden)
-  uvHiddenPlane('S1B', 1.7, .75, 0xdd00ff, -2.5, 2.2, -5.88);
-
-  // medical cart
-  mesh(new THREE.BoxGeometry(.75, .85, .55), M({ color: 0x1c2530, metalness: .5, roughness: .4 }), 2.5, .425, .8);
-  mesh(new THREE.BoxGeometry(.75, .03, .55), M({ color: 0x283445, metalness: .6 }), 2.5, .86, .8);
-  // vials on cart
-  for (let i = 0; i < 3; i++) {
-    mesh(new THREE.CylinderGeometry(.04, .04, .14, 8), M({ color: 0x44aacc, roughness: .15, transparent: true, opacity: .7 }), 2.2 + i * .18, .97, .8);
-  }
-
-  // server racks
-  for (let i = 0; i < 2; i++) {
-    mesh(new THREE.BoxGeometry(.8, 2.2, .5), M({ color: 0x0d1825, metalness: .8, roughness: .3 }), 4.8 + i, 1.1, -4.5);
-    for (let j = 0; j < 6; j++) {
-      const led = new THREE.Mesh(new THREE.SphereGeometry(.032), BM({ color: j % 3 === 0 ? 0x00ff88 : 0xff2a5f }));
-      led.position.set(4.8 + i + .32, .3 + j * .32, -4.23); scene.add(led);
-    }
-  }
-
-  // wall panel
-  iMesh(new THREE.BoxGeometry(.35, .25, .04), M({ color: 0x1a2535, metalness: .7, emissive: 0xff2a5f, emissiveIntensity: .55 }), 'S1C', -5.93, 1.7, -1.5, 0, Math.PI / 2, 0);
+/* ── ROOM 4: Haunted Library ── */
+function bLibrary(r){
+  const wt=woodTex();
+  pL(0xffb040,1.2,8,0,5.5,0);pL(0xff8800,.8,10,-3,2,-2);pL(0xff6600,.5,6,3,1.5,2);
+  shell(M({map:wt,roughness:.65}),M({color:0x1a1510,roughness:.88}),M({color:0x120e0a,roughness:.9}),12,12,6);
+  mesh(new THREE.CylinderGeometry(.05,.05,.8,8),M({color:0x3a3020,metalness:.3}),0,5.7,0);
+  iMesh(new THREE.TorusGeometry(.7,.045,8,32),M({color:0x4a3a20,metalness:.3}),'S4A',0,5.1,0);
+  for(let ci=0;ci<12;ci++){const a=(ci/12)*Math.PI*2,cx=Math.cos(a)*.7,cz=Math.sin(a)*.7;
+    mesh(new THREE.CylinderGeometry(.04,.04,.22,8),M({color:0xf8f0e0,roughness:.5}),cx,5.0,cz);
+    const fl=new THREE.Mesh(new THREE.SphereGeometry(.035),BM({color:0xffcc00}));fl.position.set(cx,5.14,cz);scene.add(fl);
+    pL(0xffaa00,.4,1.5,cx,5.1,cz,true)}
+  for(const[bx,bz,ry]of[[-4.8,0,Math.PI/2],[4.8,0,-Math.PI/2],[-2.2,-5.9,0],[2.2,-5.9,0]]){
+    mesh(new THREE.BoxGeometry(2.4,3,.38),M({map:wt,roughness:.7}),bx,1.5,bz,0,ry,0);
+    for(let row=0;row<3;row++)for(let col=0;col<6;col++){
+      const bk=new THREE.Mesh(new THREE.BoxGeometry(.14+Math.random()*.04,.5+Math.random()*.1,.28),
+        M({color:new THREE.Color().setHSL(Math.random()*.2+.05,.5,.22).getHex(),roughness:.8}));
+      bk.position.set(bx+(col-2.5)*.36,.65+row*.85,bz+(ry===0?.05:0));bk.rotation.y=ry;scene.add(bk)}}
+  mesh(new THREE.BoxGeometry(.9,.45,1),M({color:0x5a2a1a,roughness:.7}),0,.225,0);
+  mesh(new THREE.BoxGeometry(.9,.7,.1),M({color:0x5a2a1a,roughness:.7}),0,.55,-.5);
+  mesh(new THREE.BoxGeometry(.12,.45,.9),M({color:0x5a2a1a,roughness:.7}),-.44,.225,0);
+  mesh(new THREE.BoxGeometry(.12,.45,.9),M({color:0x5a2a1a,roughness:.7}),.44,.225,0);
+  iMesh(new THREE.BoxGeometry(.5,1.8,.28),M({map:wt,roughness:.65}),'S4C',4.4,.9,-5.8);
+  mesh(new THREE.BoxGeometry(.5,.35,.28),M({color:0x5a4020,metalness:.2}),4.4,1.975,-5.8);
+  const cf=new THREE.Mesh(new THREE.CircleGeometry(.14,16),BM({color:0xddbb88}));cf.position.set(4.4,1.35,-5.66);scene.add(cf);
+  const cl=new THREE.Mesh(new THREE.SphereGeometry(.04),BM({color:0xff0000}));cl.position.set(4.7,.4,-5.66);scene.add(cl);
+  for(const[wx,wy,wz]of[[-5,4.5,-3],[5,4.2,-1],[0,5.6,-5.9]]){const w=new THREE.Mesh(new THREE.RingGeometry(.06,.42,8),BM({color:0xaaaaaa,transparent:true,opacity:.3,wireframe:true}));w.position.set(wx,wy,wz);scene.add(w)}
+  uvP('S4B',.9,.55,0xcc00ff,-4.6,1.5,0,0,Math.PI/2);
+  mesh(new THREE.BoxGeometry(.6,.1,.5),M({map:wt,roughness:.7}),4.5,.5,-1);
+  mesh(new THREE.CylinderGeometry(.2,.18,.3,16),M({color:0x222222,metalness:.3}),4.5,.65,-1);
+  mesh(new THREE.SphereGeometry(.18,12,8),M({color:0xff6600,roughness:.6}),4.5,.68,.5);
+  mesh(new THREE.CylinderGeometry(.03,.03,.1,6),M({color:0x2a4a10,roughness:.8}),4.5,.87,.5);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ROOM 2 — OVERGROWN CORRIDOR
-═══════════════════════════════════════════════════════════════ */
-function buildCorridor(room) {
-  buildShell(
-    M({ color: 0x0f1714, roughness: .78 }),
-    M({ color: 0x0c1410, roughness: .9 }),
-    M({ color: 0x08100d, roughness: .95 }),
-    10, 14, 5.5
-  );
-
-  pLight(0x00cc66, 1.8, 14, -2, 2.8, -1);
-  pLight(0x224433, .8, 10, 2, 1.5, -5);
-  sLight(0x88ffcc, 1.5, 0, 5.5, -5, 0, 1, -8, false);
-
-  // arched ceiling ribs
-  for (let z = 0; z > -12; z -= 3) {
-    const arch = new THREE.Mesh(new THREE.TorusGeometry(2.6, .12, 6, 20, Math.PI), M({ color: 0x1a2e20, roughness: .9 }));
-    arch.position.set(0, 3, z); arch.rotation.y = Math.PI / 2; scene.add(arch);
-  }
-
-  // vine pillars
-  for (let z = 0; z > -11; z -= 3.5) {
-    iMesh(new THREE.BoxGeometry(.7, 5, .7), M({ color: 0x1b2d24, roughness: .9 }), 'S2A', -2.2, 2.5, z);
-    mesh(new THREE.BoxGeometry(.7, 5, .7), M({ color: 0x1b2d24, roughness: .9 }), 2.2, 2.5, z);
-    for (let v = 0; v < 4; v++) {
-      const vine = new THREE.Mesh(new THREE.CylinderGeometry(.022, .015, 1.2 + v * .35), M({ color: 0x2a4a22, roughness: 1 }));
-      vine.position.set(-2.2 + (Math.random() - .5) * .25, 1.2 + v * .9, z + (Math.random() - .5) * .25);
-      vine.rotation.z = (Math.random() - .5) * .7; scene.add(vine);
-    }
-  }
-
-  // light shaft
-  const sh = new THREE.Mesh(new THREE.CylinderGeometry(.05, .55, 5), BM({ color: 0x88ffcc, transparent: true, opacity: .055 }));
-  sh.rotation.x = Math.PI / 2; sh.position.set(0, .9, -9.5); scene.add(sh);
-
-  // debris
-  for (let i = 0; i < 7; i++) {
-    mesh(new THREE.BoxGeometry(.2 + Math.random() * .4, .09, .15 + Math.random() * .28),
-      M({ color: 0x111613, roughness: .95 }), (Math.random() - .5) * 3.5, .045, -1.5 - i * 1.3);
-  }
-
-  // UV handprints (hidden)
-  uvHiddenPlane('S2B', 1.0, .85, 0x00ff88, 4.3, 1.55, -2.5, 0, -Math.PI / 2);
-
-  // interior panel on pillar
-  iMesh(new THREE.BoxGeometry(.3, .2, .04), M({ color: 0x1a2535, metalness: .7, emissive: 0xff2a5f, emissiveIntensity: .55 }), 'S2C', 4.85, 1.7, -1.5, 0, -Math.PI / 2, 0);
+/* ── ROOM 5: Sealed Red Chamber ── */
+function bRed(r){
+  pL(0xff0033,2.2,12,0,3.2,-1,true);pL(0xff2200,1,8,-2.5,1.5,2);pL(0x440000,.6,12,3,1,-3);
+  shell(M({map:stoneTex(),roughness:.82}),M({map:stoneTex(),roughness:.85}),M({color:0x070407,roughness:.9}),10,10,5.5);
+  iMesh(new THREE.BoxGeometry(2.5,.2,.04),M({color:0xcc0022,roughness:.5,emissive:0x440000,emissiveIntensity:.5}),'S5A',0,2.3,-4.95,0,0,.8);
+  mesh(new THREE.BoxGeometry(2.5,.2,.04),M({color:0xcc0022,roughness:.5,emissive:0x440000,emissiveIntensity:.5}),0,2.3,-4.95,0,0,-.8);
+  for(let i=0;i<22;i++){const d=new THREE.Mesh(new THREE.PlaneGeometry(.05+Math.random()*.14,.05+Math.random()*.12),BM({color:0xaa0011,transparent:true,opacity:.8}));d.position.set((Math.random()-.5)*3,1.5+Math.random()*2.2,-4.93);scene.add(d)}
+  mesh(new THREE.BoxGeometry(.5,.45,.4),M({color:0x2a1a0a,roughness:.8}),0,.225,-4.7);
+  mesh(new THREE.BoxGeometry(.5,.5,.05),M({color:0x2a1a0a,roughness:.8}),0,.47,-4.47);
+  for(const dx of[-.21,.21])mesh(new THREE.BoxGeometry(.05,.45,.35),M({color:0x2a1a0a,roughness:.8}),dx,.225,-4.58);
+  uvP('S5B',.12,.12,0xcc00ff,0,.015,-1.5,-Math.PI/2,0);
+  const rg=new THREE.Mesh(new THREE.RingGeometry(1.2,1.3,32),BM({color:0xaa0033,transparent:true,opacity:0,side:THREE.DoubleSide}));
+  rg.rotation.x=-Math.PI/2;rg.position.set(0,.012,-1.5);rg.userData.cid='S5B';scene.add(rg);iObjs.push(rg);
+  for(let i=0;i<5;i++)mesh(new THREE.BoxGeometry(.3+Math.random()*.4,.2+Math.random()*.3,.25+Math.random()*.35),M({color:0x1a1210,roughness:.9}),(Math.random()-.5)*3,.15,1+Math.random()*2,0,Math.random()*.5,0);
+  mesh(new THREE.CylinderGeometry(.02,.02,.8),M({color:0x222222}),0,5.4,-1);
+  mesh(new THREE.CylinderGeometry(.12,.1,.2,8),M({color:0x1a1a1a,metalness:.3}),0,5.0,-1);
+  pL(0xff4400,1.1,5,0,4.8,-1,true);
+  iMesh(new THREE.BoxGeometry(.3,.2,.04),M({color:0x1a2535,metalness:.3,emissive:0xff2a5f,emissiveIntensity:.5}),'S5C',-4.93,1.7,-1.5,0,Math.PI/2,0);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ROOM 3 — SAFEHOUSE KITCHEN
-═══════════════════════════════════════════════════════════════ */
-function buildKitchen(room) {
-  const wt = woodTex(); const st = stoneTex(true);
-  buildShell(
-    M({ map: tileTex('#1a1812', '#2a3020', 6), roughness: .6 }),
-    M({ map: st, roughness: .85 }),
-    M({ color: 0x2a2a20, roughness: .9 })
-  );
-
-  pLight(0xffb700, 2.8, 9, -1.2, 2.6, .5);
-  pLight(0xff8844, .8, 6, 2, 1.8, 1.5);
-
-  // table
-  iMesh(new THREE.BoxGeometry(1.6, .08, 1.1), M({ map: wt, roughness: .65 }), 'S3A', -1.2, .72, .5);
-  for (const [ox, oz] of [[-.7, -.45], [-.7, .45], [.7, -.45], [.7, .45]]) {
-    mesh(new THREE.BoxGeometry(.07, .72, .07), M({ map: wt, roughness: .7 }), -1.2 + ox, .36, .5 + oz);
-  }
-  // mugs
-  for (const ox of [-.35, .15]) mesh(new THREE.CylinderGeometry(.055, .045, .09, 10), M({ color: 0xeeeeee, roughness: .4 }), -1.2 + ox, .81, .5);
-  // solvent bottle
-  mesh(new THREE.CylinderGeometry(.065, .065, .3, 10), M({ color: 0x1a7a1a, roughness: .15, transparent: true, opacity: .75 }), -1.2, .88, .5);
-
-  // chairs
-  for (const ox of [-.5, .4]) {
-    mesh(new THREE.BoxGeometry(.5, .06, .4), M({ map: wt, roughness: .7 }), -1.2 + ox, .55, .5);
-    mesh(new THREE.BoxGeometry(.5, .5, .05), M({ map: wt, roughness: .7 }), -1.2 + ox, .8, .3);
-    for (const lx of [-.2, .2]) { mesh(new THREE.BoxGeometry(.05, .55, .05), M({ map: wt }), -1.2 + ox + lx, .275, .5 + .17); }
-    for (const lx of [-.2, .2]) { mesh(new THREE.BoxGeometry(.05, .55, .05), M({ map: wt }), -1.2 + ox + lx, .275, .5 - .17); }
-  }
-
-  // hanging lamp
-  mesh(new THREE.CylinderGeometry(.02, .02, 1.2), M({ color: 0x2a2a2a }), -1.2, 4.7, .5);
-  mesh(new THREE.ConeGeometry(.3, .34, 16), M({ color: 0x2e4a2e, roughness: .6 }), -1.2, 4.1, .5, Math.PI, 0, 0);
-  pLight(0xffb700, 1.5, 4, -1.2, 3.7, .5, true);
-
-  // shelves + jars
-  for (let sy = 0; sy < 2; sy++) {
-    mesh(new THREE.BoxGeometry(1.8, .04, .22), M({ color: 0x3a2a14, roughness: .7 }), 1.5, 2.0 + sy * .7, -4.9);
-    for (let jx = 0; jx < 4; jx++) mesh(new THREE.CylinderGeometry(.045, .04, .12, 8), M({ color: 0x334a33, roughness: .3 }), 1.0 + jx * .28, 2.1 + sy * .7, -4.9);
-  }
-
-  // cabinets
-  for (let cx = 0; cx < 4; cx++) mesh(new THREE.BoxGeometry(.9, .75, .35), M({ map: wt, roughness: .7 }), -1.8 + cx * 1.1, 2.0, -4.8);
-
-  // stove counter
-  mesh(new THREE.BoxGeometry(2.2, .8, .55), M({ color: 0x2a2a22, roughness: .5 }), 2.8, .4, -3.5);
-  mesh(new THREE.BoxGeometry(2.2, .04, .55), M({ color: 0x555544, metalness: .6, roughness: .3 }), 2.8, .82, -3.5);
-
-  // ship painting
-  mesh(new THREE.BoxGeometry(1.1, .75, .04), M({ color: 0x4a3a28, roughness: .7 }), 1.5, 1.9, -4.88);
-  mesh(new THREE.PlaneGeometry(.95, .6), M({ color: 0x1a2a3a, roughness: .8 }), 1.5, 1.9, -4.85);
-
-  // UV ink ledger (hidden)
-  uvHiddenPlane('S3B', .7, .45, 0xaa00ff, -1.2, .77, .5, -Math.PI / 2, 0);
-
-  // locked cabinet
-  iMesh(new THREE.BoxGeometry(.95, .75, .35), M({ color: 0x2a1e10, roughness: .7, emissive: 0xff2a5f, emissiveIntensity: .3 }), 'S3C', -1.8, 2.0, -4.8);
-  const cl = new THREE.Mesh(new THREE.SphereGeometry(.04), BM({ color: 0xff0000 }));
-  cl.position.set(-1.38, 2.25, -4.61); scene.add(cl);
+/* ── ROOM 6: Mansion Gallery ── */
+function bGallery(r){
+  sL(0xffeedd,4,0,6.8,0,0,1.5,0);pL(0xff2a5f,1.8,10,0,2.8,-2);pL(0xffaa33,1,7,-3,3,1);
+  shell(M({color:0x13100a,roughness:.45,metalness:.1}),M({color:0x100e14,roughness:.8}),M({color:0x0c0a10,roughness:.9}),14,14,7);
+  mesh(new THREE.CylinderGeometry(.03,.03,1,6),M({color:0x3a3020,metalness:.3}),0,6.5,0);
+  for(const[rad,y]of[[.95,5.8],[.55,5.3]]){const rn=new THREE.Mesh(new THREE.TorusGeometry(rad,.042,8,32),M({color:0x4a3a20,metalness:.3}));rn.position.y=y;scene.add(rn);
+    for(let ci=0;ci<8;ci++){const a=(ci/8)*Math.PI*2;const fl=new THREE.Mesh(new THREE.SphereGeometry(.042),BM({color:0xffdd66}));fl.position.set(Math.cos(a)*rad,y+.02,Math.sin(a)*rad);scene.add(fl);
+      pL(0xffaa44,.3,2.5,Math.cos(a)*rad,y,Math.sin(a)*rad)}}
+  const ar=new THREE.Mesh(new THREE.TorusGeometry(2.2,.2,6,20,Math.PI),M({color:0x2a2635,roughness:.8}));ar.position.set(0,4.8,-4);ar.rotation.z=Math.PI;scene.add(ar);
+  for(let bx=-1.8;bx<=1.8;bx+=.36)mesh(new THREE.BoxGeometry(.065,4.8,.065),M({color:0x1a1820,metalness:.3,roughness:.4}),bx,2.4,-4);
+  const pds=[{x:-6.92,y:2.5,z:-2,ry:Math.PI/2},{x:-6.92,y:2.5,z:1,ry:Math.PI/2},{x:6.92,y:2.5,z:-2,ry:-Math.PI/2},{x:6.92,y:2.5,z:1,ry:-Math.PI/2},{x:-2.5,y:2.5,z:-6.92},{x:0,y:2.5,z:-6.92},{x:2.5,y:2.5,z:-6.92}];
+  pds.forEach((p,i)=>{mesh(new THREE.BoxGeometry(1.3,1.7,.06),M({color:0x5a3a28,roughness:.65}),p.x,p.y,p.z,0,p.ry||0,0);
+    const cv=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.45),M({color:[0x5a3a2e,0x3e4a28,0x2a2e4a,0x4a2a2a,0x3a2a3e,0x2a3a2a,0x3e3a2a][i]||0x3a3a3a,roughness:.8}));
+    cv.position.set(p.x+(p.ry?(p.ry>0?.04:-.04):0),p.y,p.z+(p.ry?0:.04));cv.rotation.y=p.ry||0;scene.add(cv);
+    if(i===0){cv.userData.cid='S6A';iObjs.push(cv)}});
+  for(const[rz,y]of[[.12,1.35],[-.1,1.12]]){const t=new THREE.Mesh(new THREE.PlaneGeometry(4.5,.24),BM({color:0xffcc00,side:THREE.DoubleSide}));t.position.set(-2.5,y,-3.5);t.rotation.z=rz;scene.add(t);
+    if(rz>0){t.userData.cid='S6B';iObjs.push(t)}}
+  const ol=new THREE.Mesh(new THREE.PlaneGeometry(1.1,2),BM({color:0xff2a5f,wireframe:true,transparent:true,opacity:.6}));ol.rotation.x=-Math.PI/2;ol.position.set(0,.011,-1.4);scene.add(ol);
+  for(let i=0;i<16;i++){const d=new THREE.Mesh(new THREE.PlaneGeometry(.06+Math.random()*.1,.05+Math.random()*.1),BM({color:0xaa1133,transparent:true,opacity:.8}));d.rotation.x=-Math.PI/2;d.position.set((Math.random()-.5)*3,.013,-1.5+(Math.random()-.5)*2);scene.add(d)}
+  for(let i=0;i<8;i++){const td=new THREE.Mesh(new THREE.CircleGeometry(.065,8),BM({color:0xaa0033,transparent:true,opacity:0}));td.rotation.x=-Math.PI/2;td.position.set(-2.5+i*.35,.012,-3+i*.35);td.userData.cid='S6B';scene.add(td);iObjs.push(td)}
+  for(let s=0;s<8;s++)mesh(new THREE.BoxGeometry(2.5,.12,.55),M({color:0x201a28,roughness:.6}),-4.5,.06+s*.28,-1.5+s*.28);
+  mesh(new THREE.BoxGeometry(.1,2.5,3.5),M({color:0x2a1e30,roughness:.8}),-5.7,.75,-1.5);
+  iMesh(new THREE.BoxGeometry(2.4,3.5,.14),M({color:0x1a1820,metalness:.3,roughness:.4,emissive:0x001100,emissiveIntensity:.2}),'S6C',-4.5,1.75,-2);
+  const sg=new THREE.Mesh(new THREE.SphereGeometry(.045),BM({color:0xff0000}));sg.position.set(-3.3,2.6,-1.93);scene.add(sg);
+  for(const x of[-6.5,-4,-1.5,1.5,4,6.5])mesh(new THREE.BoxGeometry(.3,7,.3),M({color:0x1c1825,roughness:.7}),x,3.5,-6.85);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ROOM 4 — HAUNTED LIBRARY
-═══════════════════════════════════════════════════════════════ */
-function buildLibrary(room) {
-  const wt = woodTex();
-  buildShell(M({ map: wt, roughness: .65 }), M({ color: 0x1a1510, roughness: .88 }), M({ color: 0x120e0a, roughness: .9 }), 12, 12, 6);
-
-  pLight(0xffb040, .9, 7, 0, 5.5, 0);
-  pLight(0xff8800, .6, 10, -3, 2.0, -2);
-  pLight(0xff6600, .4, 6, 3, 1.5, 2);
-
-  // chandelier rig
-  mesh(new THREE.CylinderGeometry(.05, .05, .8, 8), M({ color: 0x3a3020, metalness: .7 }), 0, 5.7, 0);
-  iMesh(new THREE.TorusGeometry(.7, .045, 8, 32), M({ color: 0x4a3a20, metalness: .8 }), 'S4A', 0, 5.1, 0);
-  // candles on ring
-  for (let ci = 0; ci < 12; ci++) {
-    const ang = (ci / 12) * Math.PI * 2;
-    const cx = Math.cos(ang) * .7, cz = Math.sin(ang) * .7;
-    mesh(new THREE.CylinderGeometry(.04, .04, .22, 8), M({ color: 0xf8f0e0, roughness: .5 }), cx, 5.0, cz);
-    const fl = new THREE.Mesh(new THREE.SphereGeometry(.035), BM({ color: 0xffcc00 }));
-    fl.position.set(cx, 5.14, cz); scene.add(fl);
-    pLight(0xffaa00, .3, 1.4, cx, 5.1, cz, true);
-  }
-
-  // bookshelves (4 walls)
-  for (const [bx, bz, ry] of [[-4.8, 0, Math.PI / 2], [4.8, 0, -Math.PI / 2], [-2.2, -5.9, 0], [2.2, -5.9, 0]]) {
-    mesh(new THREE.BoxGeometry(2.4, 3.0, .38), M({ map: wt, roughness: .7 }), bx, 1.5, bz, 0, ry, 0);
-    for (let row = 0; row < 3; row++) for (let col = 0; col < 6; col++) {
-      const bk = new THREE.Mesh(new THREE.BoxGeometry(.14 + Math.random() * .04, .5 + Math.random() * .1, .28),
-        M({ color: new THREE.Color().setHSL(Math.random() * .2 + .05, .5, .22).getHex(), roughness: .8 }));
-      bk.position.set(bx + (col - 2.5) * .36, .65 + row * .85, bz + (ry === 0 ? .05 : 0));
-      bk.rotation.y = ry; scene.add(bk);
-    }
-  }
-
-  // armchair
-  mesh(new THREE.BoxGeometry(.9, .45, 1.0), M({ color: 0x5a2a1a, roughness: .7 }), 0, .225, 0);
-  mesh(new THREE.BoxGeometry(.9, .7, .1), M({ color: 0x5a2a1a, roughness: .7 }), 0, .55, -.5);
-  mesh(new THREE.BoxGeometry(.12, .45, .9), M({ color: 0x5a2a1a, roughness: .7 }), -.44, .225, 0);
-  mesh(new THREE.BoxGeometry(.12, .45, .9), M({ color: 0x5a2a1a, roughness: .7 }), .44, .225, 0);
-
-  // grandfather clock
-  iMesh(new THREE.BoxGeometry(.5, 1.8, .28), M({ map: wt, roughness: .65 }), 'S4C', 4.4, .9, -5.8);
-  mesh(new THREE.BoxGeometry(.5, .35, .28), M({ color: 0x5a4020, metalness: .3 }), 4.4, 1.975, -5.8);
-  const clkF = new THREE.Mesh(new THREE.CircleGeometry(.14, 16), BM({ color: 0xddbb88 }));
-  clkF.position.set(4.4, 1.35, -5.66); scene.add(clkF);
-  const clkL = new THREE.Mesh(new THREE.SphereGeometry(.04), BM({ color: 0xff0000 }));
-  clkL.position.set(4.7, .4, -5.66); scene.add(clkL);
-
-  // spider webs
-  for (const [wx, wy, wz] of [[-5.0, 4.5, -3], [5.0, 4.2, -1], [0, 5.6, -5.9]]) {
-    const web = new THREE.Mesh(new THREE.RingGeometry(.06, .42, 8), BM({ color: 0xaaaaaa, transparent: true, opacity: .32, wireframe: true }));
-    web.position.set(wx, wy, wz); scene.add(web);
-  }
-
-  // UV shelf cipher (hidden)
-  uvHiddenPlane('S4B', .9, .55, 0xcc00ff, -4.6, 1.5, 0, 0, Math.PI / 2);
-
-  // side-table + cauldron + pumpkin
-  mesh(new THREE.BoxGeometry(.6, .1, .5), M({ map: wt, roughness: .7 }), 4.5, .5, -1);
-  mesh(new THREE.CylinderGeometry(.2, .18, .3, 16), M({ color: 0x222222, metalness: .6 }), 4.5, .65, -1);
-  mesh(new THREE.SphereGeometry(.18, 12, 8), M({ color: 0xff6600, roughness: .6 }), 4.5, .68, .5);
-  mesh(new THREE.CylinderGeometry(.03, .03, .1, 6), M({ color: 0x2a4a10, roughness: .8 }), 4.5, .87, .5);
+/* ── ROOM 7: Crime Scene Bathroom ── */
+function bBath(r){
+  sL(0xfff0cc,2.5,0,4.5,0,0,1.5,0);pL(0xffa060,.9,6,2,2.5,1);pL(0x220000,.6,5,-2,1,-2);
+  shell(M({map:chkTex(),roughness:.35,metalness:.08}),M({map:stoneTex(false),roughness:.82}),M({color:0x070909,roughness:.9}),9,9,4.5);
+  iMesh(new THREE.PlaneGeometry(1,2),M({color:0xf0efe8,roughness:.9}),'S7A',0,.01,-.5,-Math.PI/2,0,.2);
+  for(let i=0;i<14;i++){const bd=new THREE.Mesh(new THREE.PlaneGeometry(.04+Math.random()*.12,.04+Math.random()*.1),BM({color:0x990011,transparent:true,opacity:.85}));bd.rotation.x=-Math.PI/2;bd.position.set((Math.random()-.5)*1.4,.012,-.5+(Math.random()-.5)*1.8);scene.add(bd)}
+  for(const[px,pz]of[[-1.8,1],[1.8,1]]){mesh(new THREE.CylinderGeometry(.03,.03,.8,8),M({color:0xddbb00,metalness:.3}),px,.4,pz);mesh(new THREE.SphereGeometry(.06,8,8),M({color:0xddbb00,metalness:.3}),px,.84,pz)}
+  const tp=new THREE.Mesh(new THREE.PlaneGeometry(3.8,.12),BM({color:0xffcc00,side:THREE.DoubleSide}));tp.position.set(0,.84,1);scene.add(tp);
+  iMesh(new THREE.BoxGeometry(1.6,.55,2.8),M({color:0xd4cfc8,roughness:.3,metalness:.05}),'S7C',-3.2,.275,-2);
+  mesh(new THREE.BoxGeometry(1.4,.45,2.6),M({color:0x1a1818,roughness:.4}),-3.2,.52,-2);
+  mesh(new THREE.PlaneGeometry(2.8,.9),M({color:0xaaaaaa,roughness:.6,transparent:true,opacity:.5}),-3.2,.99,-.6);
+  mesh(new THREE.CylinderGeometry(.015,.015,2.9),M({color:0x888888,metalness:.3}),-3.2,1.5,-.6,0,0,Math.PI/2);
+  for(let i=0;i<8;i++){const bd=new THREE.Mesh(new THREE.PlaneGeometry(.05+Math.random()*.1,.05+Math.random()*.1),BM({color:0xcc0022,transparent:true,opacity:.8}));bd.position.set(-4.42,.4+Math.random()*1.2,-2+(Math.random()-.5)*2);bd.rotation.y=Math.PI/2;scene.add(bd)}
+  mesh(new THREE.PlaneGeometry(1.2,.9),M({color:0x8899aa,metalness:.5,roughness:.1}),0,2.5,-4.4);
+  mesh(new THREE.BoxGeometry(1.3,1,.04),M({color:0x2a2218,roughness:.7}),0,2.5,-4.42);
+  uvP('S7B',1.1,.8,0xcc00ff,0,2.5,-4.38);
+  for(const[sx,sz]of[[-4.4,0],[4.4,0],[0,4.4]]){mesh(new THREE.BoxGeometry(.12,.3,.1),M({color:0x3a3020,roughness:.7}),sx,2.5,sz,0,sx>0?-Math.PI/2:sz>0?Math.PI:Math.PI/2,0);pL(0xffcc88,.7,2.5,sx,2.55,sz,true)}
+  mesh(new THREE.BoxGeometry(.8,.04,.2),M({color:0x3a3020,roughness:.7}),4.4,2,-1.5,0,-Math.PI/2,0);
+  for(let bi=0;bi<3;bi++)mesh(new THREE.CylinderGeometry(.04,.04,.18,8),M({color:[0x228844,0x884422,0x224488][bi],roughness:.3}),4.32,2.13,-1.8+bi*.3);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ROOM 5 — SEALED RED CHAMBER
-═══════════════════════════════════════════════════════════════ */
-function buildRedRoom(room) {
-  buildShell(M({ map: stoneTex(), roughness: .82 }), M({ map: stoneTex(), roughness: .85 }), M({ color: 0x070407, roughness: .9 }), 10, 10, 5.5);
-
-  pLight(0xff0033, 1.8, 12, 0, 3.2, -1, true);
-  pLight(0xff2200, .9, 8, -2.5, 1.5, 2);
-  pLight(0x440000, .5, 12, 3, 1.0, -3);
-
-  // X symbols on back wall
-  iMesh(new THREE.BoxGeometry(2.5, .2, .04), M({ color: 0xcc0022, roughness: .5, emissive: 0x440000, emissiveIntensity: .5 }), 'S5A', 0, 2.3, -4.95, 0, 0, .8);
-  mesh(new THREE.BoxGeometry(2.5, .2, .04), M({ color: 0xcc0022, roughness: .5, emissive: 0x440000, emissiveIntensity: .5 }), 0, 2.3, -4.95, 0, 0, -.8);
-  // blood splatter on wall
-  for (let i = 0; i < 22; i++) {
-    const d = new THREE.Mesh(new THREE.PlaneGeometry(.05 + Math.random() * .14, .05 + Math.random() * .12), BM({ color: 0xaa0011, transparent: true, opacity: .8 }));
-    d.position.set((Math.random() - .5) * 3, 1.5 + Math.random() * 2.2, -4.93); scene.add(d);
-  }
-
-  // barricade items
-  mesh(new THREE.BoxGeometry(.5, .45, .4), M({ color: 0x2a1a0a, roughness: .8 }), 0, .225, -4.7);
-  mesh(new THREE.BoxGeometry(.5, .5, .05), M({ color: 0x2a1a0a, roughness: .8 }), 0, .47, -4.47);
-  for (const dx of [-.21, .21]) mesh(new THREE.BoxGeometry(.05, .45, .35), M({ color: 0x2a1a0a, roughness: .8 }), dx, .225, -4.58);
-
-  // UV floor rings
-  uvHiddenPlane('S5B', .12, .12, 0xcc00ff, 0, .015, -1.5, -Math.PI / 2, 0);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.3, 32), BM({ color: 0xaa0033, transparent: true, opacity: .0, side: THREE.DoubleSide }));
-  ring.rotation.x = -Math.PI / 2; ring.position.set(0, .012, -1.5); ring.userData.cid = 'S5B'; scene.add(ring); iObjs.push(ring);
-
-  // scattered debris
-  for (let i = 0; i < 5; i++) mesh(new THREE.BoxGeometry(.3 + Math.random() * .4, .2 + Math.random() * .3, .25 + Math.random() * .35),
-    M({ color: 0x1a1210, roughness: .9 }), (Math.random() - .5) * 3, .15, 1 + Math.random() * 2, 0, Math.random() * .5, 0);
-
-  // hanging lamp
-  mesh(new THREE.CylinderGeometry(.02, .02, .8), M({ color: 0x222222 }), 0, 5.4, -1);
-  mesh(new THREE.CylinderGeometry(.12, .1, .2, 8), M({ color: 0x1a1a1a, metalness: .6 }), 0, 5.0, -1);
-  pLight(0xff4400, .9, 4, 0, 4.8, -1, true);
-
-  // wall access panel (S5C)
-  iMesh(new THREE.BoxGeometry(.3, .2, .04), M({ color: 0x1a2535, metalness: .7, emissive: 0xff2a5f, emissiveIntensity: .6 }), 'S5C', -4.93, 1.7, -1.5, 0, Math.PI / 2, 0);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   ROOM 6 — MANSION GALLERY
-═══════════════════════════════════════════════════════════════ */
-function buildGallery(room) {
-  buildShell(M({ color: 0x13100a, roughness: .45, metalness: .12 }), M({ color: 0x100e14, roughness: .8 }), M({ color: 0x0c0a10, roughness: .9 }), 14, 14, 7);
-
-  sLight(0xffeedd, 3.5, 0, 6.8, 0, 0, 1.5, 0, true);
-  pLight(0xff2a5f, 1.5, 10, 0, 2.8, -2);
-  pLight(0xffaa33, .8, 7, -3, 3.0, 1);
-
-  // chandelier (double ring)
-  mesh(new THREE.CylinderGeometry(.03, .03, 1.0, 6), M({ color: 0x3a3020, metalness: .6 }), 0, 6.5, 0);
-  for (const [r, y] of [[.95, 5.8], [.55, 5.3]]) {
-    const ring2 = new THREE.Mesh(new THREE.TorusGeometry(r, .042, 8, 32), M({ color: 0x4a3a20, metalness: .8 }));
-    ring2.position.y = y; scene.add(ring2);
-    for (let ci = 0; ci < 8; ci++) {
-      const ang = (ci / 8) * Math.PI * 2;
-      const fl = new THREE.Mesh(new THREE.SphereGeometry(.042), BM({ color: 0xffdd66 }));
-      fl.position.set(Math.cos(ang) * r, y + .02, Math.sin(ang) * r); scene.add(fl);
-      pLight(0xffaa44, .22, 2.2, Math.cos(ang) * r, y, Math.sin(ang) * r);
-    }
-  }
-
-  // arch over corridor entrance
-  const arch = new THREE.Mesh(new THREE.TorusGeometry(2.2, .2, 6, 20, Math.PI), M({ color: 0x2a2635, roughness: .8 }));
-  arch.position.set(0, 4.8, -4); arch.rotation.z = Math.PI; scene.add(arch);
-  for (let bx = -1.8; bx <= 1.8; bx += .36) {
-    mesh(new THREE.BoxGeometry(.065, 4.8, .065), M({ color: 0x1a1820, metalness: .8, roughness: .3 }), bx, 2.4, -4);
-  }
-
-  // portraits 7x
-  const pData = [{ x: -6.92, y: 2.5, z: -2, ry: Math.PI / 2 }, { x: -6.92, y: 2.5, z: 1, ry: Math.PI / 2 },
-    { x: 6.92, y: 2.5, z: -2, ry: -Math.PI / 2 }, { x: 6.92, y: 2.5, z: 1, ry: -Math.PI / 2 },
-    { x: -2.5, y: 2.5, z: -6.92 }, { x: 0, y: 2.5, z: -6.92 }, { x: 2.5, y: 2.5, z: -6.92 }];
-  pData.forEach((p, i) => {
-    mesh(new THREE.BoxGeometry(1.3, 1.7, .06), M({ color: 0x5a3a28, roughness: .65 }), p.x, p.y, p.z, 0, p.ry || 0, 0);
-    const cvs = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.45),
-      M({ color: [0x5a3a2e, 0x3e4a28, 0x2a2e4a, 0x4a2a2a, 0x3a2a3e, 0x2a3a2a, 0x3e3a2a][i] || 0x3a3a3a, roughness: .8 }));
-    cvs.position.set(p.x + (p.ry ? (p.ry > 0 ? .04 : -.04) : 0), p.y, p.z + (p.ry ? 0 : .04));
-    cvs.rotation.y = p.ry || 0; scene.add(cvs);
-    if (i === 0) { cvs.userData.cid = 'S6A'; iObjs.push(cvs); }
-  });
-
-  // police tape X
-  for (const [rz, y] of [[.12, 1.35], [-.1, 1.12]]) {
-    const t = new THREE.Mesh(new THREE.PlaneGeometry(4.5, .24), BM({ color: 0xffcc00, side: THREE.DoubleSide }));
-    t.position.set(-2.5, y, -3.5); t.rotation.z = rz; scene.add(t);
-    if (rz > 0) { t.userData.cid = 'S6B'; iObjs.push(t); }
-  }
-  // chalk outline + blood
-  const ol = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.0), BM({ color: 0xff2a5f, wireframe: true, transparent: true, opacity: .6 }));
-  ol.rotation.x = -Math.PI / 2; ol.position.set(0, .011, -1.4); scene.add(ol);
-  for (let i = 0; i < 16; i++) {
-    const d = new THREE.Mesh(new THREE.PlaneGeometry(.06 + Math.random() * .1, .05 + Math.random() * .1), BM({ color: 0xaa1133, transparent: true, opacity: .8 }));
-    d.rotation.x = -Math.PI / 2; d.position.set((Math.random() - .5) * 3, .013, -1.5 + (Math.random() - .5) * 2); scene.add(d);
-  }
-
-  // UV blood trail (hidden)
-  for (let i = 0; i < 8; i++) {
-    const td = new THREE.Mesh(new THREE.CircleGeometry(.065, 8), BM({ color: 0xaa0033, transparent: true, opacity: .0 }));
-    td.rotation.x = -Math.PI / 2; td.position.set(-2.5 + i * .35, .012, -3 + i * .35);
-    td.userData.cid = 'S6B'; scene.add(td); iObjs.push(td);
-  }
-
-  // staircase
-  for (let s = 0; s < 8; s++) mesh(new THREE.BoxGeometry(2.5, .12, .55), M({ color: 0x201a28, roughness: .6 }), -4.5, .06 + s * .28, -1.5 + s * .28);
-  mesh(new THREE.BoxGeometry(.1, 2.5, 3.5), M({ color: 0x2a1e30, roughness: .8 }), -5.7, .75, -1.5);
-
-  // staircase gate (S6C)
-  iMesh(new THREE.BoxGeometry(2.4, 3.5, .14), M({ color: 0x1a1820, metalness: .8, roughness: .3, emissive: 0x001100, emissiveIntensity: .2 }), 'S6C', -4.5, 1.75, -2);
-  const sg = new THREE.Mesh(new THREE.SphereGeometry(.045), BM({ color: 0xff0000 }));
-  sg.position.set(-3.3, 2.6, -1.93); scene.add(sg);
-
-  // pilasters
-  for (const x of [-6.5, -4.0, -1.5, 1.5, 4.0, 6.5]) mesh(new THREE.BoxGeometry(.3, 7, .3), M({ color: 0x1c1825, roughness: .7 }), x, 3.5, -6.85);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   ROOM 7 — CRIME SCENE BATHROOM
-═══════════════════════════════════════════════════════════════ */
-function buildBathroom(room) {
-  buildShell(
-    M({ map: checkerTex(), roughness: .32, metalness: .12 }),
-    M({ map: stoneTex(false), roughness: .82 }),
-    M({ color: 0x070909, roughness: .9 }),
-    9, 9, 4.5
-  );
-
-  sLight(0xfff0cc, 2.0, 0, 4.5, 0, 0, 1.5, 0, true);
-  pLight(0xffa060, .7, 6, 2, 2.5, 1);
-  pLight(0x220000, .5, 5, -2, 1.0, -2);
-
-  // victim sheet
-  iMesh(new THREE.PlaneGeometry(1.0, 2.0), M({ color: 0xf0efe8, roughness: .9 }), 'S7A', 0, .01, -.5, -Math.PI / 2, 0, .2);
-  for (let i = 0; i < 14; i++) {
-    const bd = new THREE.Mesh(new THREE.PlaneGeometry(.04 + Math.random() * .12, .04 + Math.random() * .1), BM({ color: 0x990011, transparent: true, opacity: .85 }));
-    bd.rotation.x = -Math.PI / 2; bd.position.set((Math.random() - .5) * 1.4, .012, -.5 + (Math.random() - .5) * 1.8); scene.add(bd);
-  }
-  // police tape barrier
-  for (const [px, pz] of [[-1.8, 1.0], [1.8, 1.0]]) {
-    mesh(new THREE.CylinderGeometry(.03, .03, .8, 8), M({ color: 0xddbb00, metalness: .6 }), px, .4, pz);
-    mesh(new THREE.SphereGeometry(.06, 8, 8), M({ color: 0xddbb00, metalness: .6 }), px, .84, pz);
-  }
-  const tap = new THREE.Mesh(new THREE.PlaneGeometry(3.8, .12), BM({ color: 0xffcc00, side: THREE.DoubleSide }));
-  tap.position.set(0, .84, 1); scene.add(tap);
-
-  // bathtub
-  iMesh(new THREE.BoxGeometry(1.6, .55, 2.8), M({ color: 0xd4cfc8, roughness: .3, metalness: .1 }), 'S7C', -3.2, .275, -2);
-  mesh(new THREE.BoxGeometry(1.4, .45, 2.6), M({ color: 0x1a1818, roughness: .4 }), -3.2, .52, -2);
-  // shower curtain
-  mesh(new THREE.PlaneGeometry(2.8, .9), M({ color: 0xaaaaaa, roughness: .6, transparent: true, opacity: .5 }), -3.2, .99, -.6);
-  mesh(new THREE.CylinderGeometry(.015, .015, 2.9), M({ color: 0x888888, metalness: .8 }), -3.2, 1.5, -.6, 0, 0, Math.PI / 2);
-  // blood on tub wall
-  for (let i = 0; i < 8; i++) {
-    const bd = new THREE.Mesh(new THREE.PlaneGeometry(.05 + Math.random() * .1, .05 + Math.random() * .1), BM({ color: 0xcc0022, transparent: true, opacity: .8 }));
-    bd.position.set(-4.42, .4 + Math.random() * 1.2, -2 + (Math.random() - .5) * 2); bd.rotation.y = Math.PI / 2; scene.add(bd);
-  }
-
-  // mirror
-  mesh(new THREE.PlaneGeometry(1.2, .9), M({ color: 0x8899aa, metalness: .9, roughness: .05 }), 0, 2.5, -4.4);
-  mesh(new THREE.BoxGeometry(1.3, 1.0, .04), M({ color: 0x2a2218, roughness: .7 }), 0, 2.5, -4.42);
-  // UV mirror text (hidden)
-  uvHiddenPlane('S7B', 1.1, .8, 0xcc00ff, 0, 2.5, -4.38);
-
-  // wall sconces
-  for (const [sx, sz] of [[-4.4, 0], [4.4, 0], [0, 4.4]]) {
-    mesh(new THREE.BoxGeometry(.12, .3, .1), M({ color: 0x3a3020, roughness: .7 }), sx, 2.5, sz, 0, sx > 0 ? -Math.PI / 2 : sz > 0 ? Math.PI : Math.PI / 2, 0);
-    pLight(0xffcc88, .55, 2.5, sx, 2.55, sz, true);
-  }
-
-  // shelves + bottles
-  mesh(new THREE.BoxGeometry(.8, .04, .2), M({ color: 0x3a3020, roughness: .7 }), 4.4, 2.0, -1.5, 0, -Math.PI / 2, 0);
-  for (let bi = 0; bi < 3; bi++) mesh(new THREE.CylinderGeometry(.04, .04, .18, 8), M({ color: [0x228844, 0x884422, 0x224488][bi], roughness: .3 }), 4.32, 2.13, -1.8 + bi * .3);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   MAIN RENDER LOOP
-═══════════════════════════════════════════════════════════════ */
-function loop() {
+/* ══ RENDER LOOP ══════════════════════════════════════════════ */
+function loop(){
   requestAnimationFrame(loop);
-  const dt = Math.min(clock.getDelta(), .05);
-  updateMovement(dt);
-  updateLook();
-  updateRaycast();
-
-  // flicker all registered lights
-  flickerLights.forEach(l => {
-    l.intensity = l.__base
-      ? l.__base + Math.sin(Date.now() * .006 + l.position.x) * l.__base * .3 + (Math.random() < .03 ? -l.__base * .6 : 0)
-      : (() => { l.__base = l.intensity; return l.intensity; })();
-  });
-
-  dust.rotation.y += .0003;
-  renderer.render(scene, camera);
+  const dt=Math.min(clock.getDelta(),.05);
+  move(dt);ray();drawRadar();
+  fl.forEach(l=>{if(!l.__base)l.__base=l.intensity;
+    l.intensity=l.__base+Math.sin(Date.now()*.006+l.position.x)*l.__base*.3+(Math.random()<.03?-l.__base*.6:0)});
+  dust.rotation.y+=.0003;
+  renderer.render(scene,camera);
 }
-
 </script>
 </body>
 </html>
