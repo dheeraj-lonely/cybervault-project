@@ -5,12 +5,12 @@
       "src": "app.py",
       "use": "@vercel/python",
       "config": {
-        "includeFiles": "templates/**,static/**,database/**"
+        "includeFiles": ["templates/**", "static/**", "database/**"]
       }
     }
   ],
   "routes": [
     { "src": "/static/(.*)", "dest": "/static/$1" },
-    { "src": "/(.*)", "dest": "/app.py" }
+    { "src": "/(.*)",        "dest": "/app.py"    }
   ]
 }
