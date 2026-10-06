@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CYBERVAULT — Forensic Escape</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/game.css') }}"/>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     NOTIFICATION STACK
+═══════════════════════════════════════════════════════ -->
+<div class="notif-stack" id="notif-stack"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     EVIDENCE COLLECTED NOTIFICATION
+═══════════════════════════════════════════════════════ -->
+<div class="ev-notification" id="ev-notif">NEW EVIDENCE</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 1 — MAIN MENU
+═══════════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-menu">
+  <div class="menu-bg"></div>
+
+  <!-- CCTV monitors top right -->
+  <div class="menu-cctv">
+    <div class="cctv-monitor" data-cam="1"><div class="cctv-inner">NO SIGNAL</div></div>
+    <div class="cctv-monitor" data-cam="2"><div class="cctv-inner">OFFLINE</div></div>
+    <div class="cctv-monitor" data-cam="3"><div class="cctv-inner">STATIC</div></div>
+    <div class="cctv-monitor" data-cam="4"><div class="cctv-inner">LIVE</div></div>
+  </div>
+
+  <!-- Particles -->
+  <div class="menu-particles" id="menu-particles"></div>
+
+  <div class="menu-content">
+    <h1 class="menu-logo">CYBERVAULT</h1>
+    <div class="menu-subtitle">FORENSIC&nbsp;&nbsp;ESCAPE</div>
+    <div class="menu-case-badge">● CLASSIFIED INVESTIGATION DATABASE — ACTIVE</div>
+
+    <div class="menu-buttons">
+      <button class="menu-btn primary" onclick="showCaseSelect()">
+        <span class="bicon">🔍</span> START INVESTIGATION
+      </button>
+      <button class="menu-btn" onclick="showCaseSelect()">
+        <span class="bicon">📁</span> CASE FILES
+      </button>
+      <button class="menu-btn" id="btn-continue" style="display:none" onclick="continueLastSave()">
+        <span class="bicon">▶</span> CONTINUE INVESTIGATION
+      </button>
+      <button class="menu-btn" onclick="showAchievements()">
+        <span class="bicon">🏆</span> ACHIEVEMENTS
+      </button>
+      <button class="menu-btn" onclick="showSettings()">
+        <span class="bicon">⚙</span> SETTINGS
+      </button>
+      <button class="menu-btn" onclick="window.location.href='/'">
+        <span class="bicon">←</span> EXIT TO WEBSITE
+      </button>
+    </div>
+  </div>
+
+  <div class="menu-footer">
+    CYBERVAULT FORENSIC ESCAPE &nbsp;|&nbsp; CASE DATABASE v3.0
+  </div>
+
+  <div class="audio-controls">
+    <button class="audio-btn on" id="sound-btn" onclick="toggleSound()">🔊 SFX</button>
+    <button class="audio-btn"    id="music-btn" onclick="toggleMusic()">🎵 MUSIC</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 2 — CASE SELECT
+═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-cases">
+  <div class="cases-header">
+    <div>
+      <div class="cases-title">CASE FILES</div>
+      <div class="cases-subtitle">SELECT AN INVESTIGATION TO BEGIN</div>
+    </div>
+    <button class="back-btn" onclick="initMenu()">← MAIN MENU</button>
+  </div>
+  <div class="cases-grid" id="cases-grid"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 3 — BRIEFING
+═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-briefing">
+  <div id="briefing-content" class="briefing-box"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 4 — GAME
+═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-game">
+
+  <!-- Top Bar -->
+  <div class="game-topbar">
+    <span class="topbar-case-id" id="topbar-case-id">CASE #047</span>
+    <span class="topbar-title"   id="topbar-title">THE SILENT ROOM</span>
+    <span class="topbar-room"    id="topbar-room">INVESTIGATION OFFICE</span>
+    <span class="topbar-timer"   id="topbar-timer">00:00</span>
+    <span class="topbar-hints"   id="topbar-hints">HINTS: 4</span>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="useHint()">💡 HINT</button>
+      <button class="topbar-btn" onclick="openPanel('lab')">🔬 LAB</button>
+      <button class="topbar-btn" onclick="openPanel('suspects')">👥 SUSPECTS</button>
+      <button class="topbar-btn" onclick="openPanel('board')">📌 BOARD</button>
+      <button class="topbar-btn" onclick="openPanel('timeline')">⏱ TIMELINE</button>
+      <button class="topbar-btn" onclick="openPanel('report')">📋 REPORT</button>
+      <button class="topbar-btn" onclick="autoSave();initMenu()">✕ EXIT</button>
+    </div>
+  </div>
+
+  <!-- Left Sidebar -->
+  <div class="game-sidebar">
+
+    <!-- Tools -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">FORENSIC TOOLKIT</div>
+      <div class="tool-grid">
+        <button class="tool-btn" data-tool="magnifier" onclick="toggleTool('magnifier')" title="Magnifier">
+          <span class="tool-icon">🔍</span>MAGNIFY
+        </button>
+        <button class="tool-btn" data-tool="uv" onclick="toggleTool('uv')" title="UV Scanner">
+          <span class="tool-icon">🔦</span>UV SCAN
+        </button>
+        <button class="tool-btn" data-tool="camera" onclick="toggleTool('camera')" title="Camera">
+          <span class="tool-icon">📷</span>CAMERA
+        </button>
+        <button class="tool-btn" data-tool="gloves" onclick="toggleTool('gloves')" title="Gloves">
+          <span class="tool-icon">🧤</span>GLOVES
+        </button>
+        <button class="tool-btn" data-tool="analyzer" onclick="toggleTool('analyzer')" title="Digital Analyzer">
+          <span class="tool-icon">💻</span>ANALYZE
+        </button>
+        <button class="tool-btn" data-tool="kit" onclick="toggleTool('kit')" title="Sample Kit">
+          <span class="tool-icon">🧪</span>KIT
+        </button>
+      </div>
+    </div>
+
+    <!-- Room Map -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">LOCATION MAP</div>
+      <div class="room-map" id="room-map"></div>
+    </div>
+
+    <!-- Evidence count -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">EVIDENCE</div>
+      <div class="evidence-progress" id="ev-progress">0 / 12</div>
+      <div class="progress-bar" style="margin-top:5px">
+        <div class="progress-fill" id="ev-progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="sidebar-nav">
+      <button class="sidenav-btn" id="sidenav-lab" onclick="openPanel('lab')">🔬 FORENSIC LAB</button>
+      <button class="sidenav-btn" onclick="openPanel('suspects')">👥 SUSPECTS</button>
+      <button class="sidenav-btn" onclick="openPanel('board')">📌 EVIDENCE BOARD</button>
+      <button class="sidenav-btn" onclick="openPanel('timeline')">⏱ TIMELINE</button>
+      <button class="sidenav-btn" onclick="openPanel('theory')">🧠 THEORY</button>
+      <button class="sidenav-btn" onclick="openPanel('report')">📋 FINAL REPORT</button>
+    </div>
+  </div>
+
+  <!-- Main Game Area -->
+  <div class="game-main">
+
+    <!-- Crime Scene -->
+    <div class="crime-scene" id="crime-scene">
+      <!-- Background -->
+      <div class="scene-bg office" id="scene-bg"></div>
+
+      <!-- Atmosphere -->
+      <div class="scene-atmosphere"></div>
+      <div class="scene-flicker"></div>
+
+      <!-- Ceiling light -->
+      <div class="obj-ceiling-light"></div>
+
+      <!-- Floor -->
+      <div class="obj-floor"></div>
+
+      <!-- Room items (CSS art) -->
+      <div class="obj-window"></div>
+      <div class="obj-bookshelf"></div>
+      <div class="obj-cabinet"></div>
+
+      <!-- Interactive objects layer -->
+      <div id="scene-objects" style="position:absolute;inset:0;pointer-events:none"></div>
+
+      <!-- UV reveals layer -->
+      <div id="scene-uv-layer" style="position:absolute;inset:0;pointer-events:none"></div>
+
+      <!-- Room description overlay -->
+      <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);
+                  font-family:var(--font-mono);font-size:.62rem;color:rgba(0,212,255,.5);
+                  letter-spacing:2px;pointer-events:none" id="room-description">
+        INVESTIGATION OFFICE — FLOOR 4
+      </div>
+
+      <!-- UV active indicator -->
+      <div id="uv-indicator" style="display:none;position:absolute;top:8px;left:8px;
+                                     font-family:var(--font-mono);font-size:.68rem;
+                                     color:#ff88ff;padding:3px 8px;
+                                     background:rgba(160,0,255,.15);
+                                     border:1px solid rgba(160,0,255,.4)">
+        🔮 UV SCANNER ACTIVE
+      </div>
+    </div>
+
+    <!-- Inspect Panel (slides up from bottom) -->
+    <div id="inspect-panel">
+      <div class="inspect-inner" id="inspect-inner">
+        <!-- filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar — Evidence / Journal -->
+  <div class="game-rightpanel">
+    <div class="rightpanel-tabs">
+      <button class="rptab active" data-tab="evidence" onclick="switchRightTab('evidence')">EVIDENCE</button>
+      <button class="rptab"        data-tab="journal"  onclick="switchRightTab('journal')">JOURNAL</button>
+    </div>
+
+    <!-- Evidence tab -->
+    <div class="rptab-content active" id="rptab-evidence">
+      <div id="evidence-panel">
+        <div class="muted" style="font-size:.72rem;padding:6px">Explore the crime scene to find evidence.</div>
+      </div>
+    </div>
+
+    <!-- Journal tab -->
+    <div class="rptab-content" id="rptab-journal">
+      <div id="journal-list"></div>
+    </div>
+  </div>
+
+</div><!-- end screen-game -->
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 5 — VERDICT
+═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-verdict">
+  <div class="verdict-box" id="verdict-box"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FULL-SCREEN PANELS
+═══════════════════════════════════════════════════════ -->
+
+<!-- Forensic Lab -->
+<div class="fullpanel" id="panel-lab">
+  <div class="fullpanel-header">
+    <div class="fullpanel-title">🔬 FORENSIC LABORATORY</div>
+    <button class="fullpanel-close" onclick="closePanel()">CLOSE ✕</button>
+  </div>
+  <div class="fullpanel-body" id="lab-body"></div>
+</div>
+
+<!-- Suspects -->
+<div class="fullpanel" id="panel-suspects">
+  <div class="fullpanel-header">
+    <div class="fullpanel-title">👥 SUSPECT ANALYSIS</div>
+    <button class="fullpanel-close" onclick="closePanel()">CLOSE ✕</button>
+  </div>
+  <div class="fullpanel-body" id="suspects-body"></div>
+</div>
+
+<!-- Evidence Board -->
+<div class="fullpanel" id="panel-board">
+  <div class="fullpanel-header">
+    <div class="fullpanel-title">📌 EVIDENCE BOARD</div>
+    <button class="fullpanel-close" onclick="closePanel()">CLOSE ✕</button>
+  </div>
+  <div class="fullpanel-body" id="board-body"></div>
+</div>
+
+<!-- Timeline -->
+<div class="fullpanel" id="panel-timeline">
+  <div class="fullpanel-header">
+    <div class="fullpanel-title">⏱ TIMELINE RECONSTRUCTION</div>
+    <button class="fullpanel-close" onclick="closePanel()">CLOSE ✕</button>
+  </div>
+  <div class="fullpanel-body" id="timeline-body"></div>
+</div>
+
+<!-- Theory -->
+<div class="fullpanel" id="panel-theory">
+  <div class="fullpanel-header">
+    <div class="fullpanel-title">🧠 INVESTIGATOR THEORY</div>
+    <button class="fullpanel-close" onclick="closePanel()">CLOSE ✕</button>
+  </div>
+  <div class="fullpanel-body" id="theory-body"></div>
+</div>
+
+<!-- Final Report -->
+<div class="fullpanel" id="panel-report">
+  <div class="fullpanel-header">
+    <div class="fullpanel-title">📋 FINAL INVESTIGATION REPORT</div>
+    <button class="fullpanel-close" onclick="closePanel()">CLOSE ✕</button>
+  </div>
+  <div class="fullpanel-body" id="report-body"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PUZZLE OVERLAYS
+═══════════════════════════════════════════════════════ -->
+
+<!-- Combination Lock -->
+<div class="puzzle-overlay" id="puzzle-combo">
+  <div class="puzzle-box" style="border-color:var(--amber)">
+    <div class="puzzle-header">
+      <span class="puzzle-title">COMBINATION LOCK</span>
+      <button class="puzzle-close" onclick="closePuzzle('puzzle-combo')">✕</button>
+    </div>
+    <div class="puzzle-body">
+      <p class="puzzle-hint" id="combo-hint"></p>
+      <div class="combo-dials" id="combo-dials"></div>
+      <button class="puzzle-submit" onclick="submitCombo()">SUBMIT COMBINATION</button>
+      <div class="puzzle-feedback" id="combo-feedback"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Password -->
+<div class="puzzle-overlay" id="puzzle-password">
+  <div class="puzzle-box" style="border-color:var(--cyan)">
+    <div class="puzzle-header">
+      <span class="puzzle-title">ACCESS TERMINAL</span>
+      <button class="puzzle-close" onclick="closePuzzle('puzzle-password')">✕</button>
+    </div>
+    <div class="puzzle-body">
+      <p class="puzzle-hint" id="pw-hint"></p>
+      <input class="password-input" id="pw-input" placeholder="ENTER CREDENTIALS"
+             onkeydown="if(event.key==='Enter')submitPassword()"
+             autocomplete="off" spellcheck="false"/>
+      <button class="puzzle-submit" onclick="submitPassword()">AUTHENTICATE</button>
+      <div class="puzzle-feedback" id="pw-feedback"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Pattern -->
+<div class="puzzle-overlay" id="puzzle-pattern">
+  <div class="puzzle-box" style="border-color:var(--purple)">
+    <div class="puzzle-header">
+      <span class="puzzle-title">SYMBOL SEQUENCE</span>
+      <button class="puzzle-close" onclick="closePuzzle('puzzle-pattern')">✕</button>
+    </div>
+    <div class="puzzle-body">
+      <p class="puzzle-hint" id="pat-hint"></p>
+      <div class="pattern-grid" id="pattern-grid" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div style="font-size:.7rem;color:var(--muted);margin:8px 0">Select symbols in correct sequence (left to right):</div>
+      <button class="puzzle-submit" onclick="submitPattern()">CONFIRM SEQUENCE</button>
+      <div class="puzzle-feedback" id="pat-feedback"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Computer Terminal (special) -->
+<div class="puzzle-overlay" id="puzzle-computer-special">
+  <div class="puzzle-box" style="border-color:var(--green);width:min(560px,94vw)">
+    <div class="puzzle-header">
+      <span class="puzzle-title">🖥 COMPUTER TERMINAL</span>
+      <button class="puzzle-close" onclick="closePuzzle('puzzle-computer-special')">✕</button>
+    </div>
+    <div class="puzzle-body">
+      <div id="computer-login-screen">
+        <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--green);margin-bottom:16px">
+          SECURE INVESTIGATION TERMINAL<br>
+          <span style="color:var(--muted)">Enter credentials to access system files.</span>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);margin-bottom:4px">USERNAME:</div>
+          <input class="password-input" id="comp-user" placeholder="username" autocomplete="off" style="margin-bottom:0"/>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);margin-bottom:4px">PASSWORD:</div>
+          <input class="password-input" id="comp-pass" placeholder="password" type="password" autocomplete="off"
+                 onkeydown="if(event.key==='Enter')submitComputerLogin()" style="margin-bottom:0"/>
+        </div>
+        <button class="puzzle-submit" onclick="submitComputerLogin()">LOGIN</button>
+        <div class="puzzle-feedback" id="comp-feedback"></div>
+      </div>
+      <div id="computer-desktop" style="display:none">
+        <div style="font-family:var(--font-mono);font-size:.65rem;color:var(--green);margin-bottom:12px">
+          LOGGED IN — INVESTIGATOR WORKSTATION
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+          <button class="lab-analyze-btn" onclick="openComputerApp('files')">📂 FILES</button>
+          <button class="lab-analyze-btn" onclick="openComputerApp('cctv')">📹 CCTV</button>
+          <button class="lab-analyze-btn" onclick="openComputerApp('email')">📧 EMAIL</button>
+          <button class="lab-analyze-btn" onclick="openComputerApp('logs')">📊 ACCESS LOG</button>
+          <button class="lab-analyze-btn" onclick="openComputerApp('deleted')">🗑 DELETED</button>
+          <button class="lab-analyze-btn" onclick="openComputerApp('usb')">💾 USB DEVICES</button>
+        </div>
+        <div id="comp-app-output" style="background:#000;padding:12px;font-family:var(--font-mono);font-size:.7rem;color:var(--green);min-height:100px;max-height:200px;overflow-y:auto;border:1px solid var(--border)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail / Evidence Modal -->
+<div class="puzzle-overlay" id="detail-modal" style="display:none" onclick="if(event.target===this)closeDetailModal()">
+  <div class="puzzle-box" style="width:min(520px,92vw)">
+    <div class="puzzle-header">
+      <span class="puzzle-title" id="detail-modal-title">EVIDENCE DETAIL</span>
+      <button class="puzzle-close" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div class="puzzle-body">
+      <div id="detail-modal-body" style="font-size:.82rem;line-height:1.65;color:rgba(232,240,250,.85)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SETTINGS MODAL
+═══════════════════════════════════════════════════════ -->
+<div class="puzzle-overlay" id="settings-modal">
+  <div class="puzzle-box" style="border-color:var(--muted);width:360px">
+    <div class="puzzle-header">
+      <span class="puzzle-title">⚙ SETTINGS</span>
+      <button class="puzzle-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="puzzle-body">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-family:var(--font-mono);font-size:.72rem">SOUND EFFECTS</span>
+          <button class="audio-btn on" id="set-sound" onclick="toggleSound()">ON</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-family:var(--font-mono);font-size:.72rem">MUSIC</span>
+          <button class="audio-btn" id="set-music" onclick="toggleMusic()">OFF</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-family:var(--font-mono);font-size:.72rem">REDUCED MOTION</span>
+          <button class="audio-btn" id="set-motion" onclick="toggleMotion()">OFF</button>
+        </div>
+        <hr style="border-color:var(--border)"/>
+        <button class="puzzle-submit" onclick="clearAllSaves()" style="background:var(--red-dim);border-color:var(--red);color:var(--red)">
+          CLEAR ALL SAVES
+        </button>
+      </div>
+      <button class="p-close" onclick="closeSettings()" style="margin-top:14px">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     ACHIEVEMENTS MODAL
+═══════════════════════════════════════════════════════ -->
+<div class="puzzle-overlay" id="achievements-modal">
+  <div class="puzzle-box" style="width:min(560px,92vw)">
+    <div class="puzzle-header">
+      <span class="puzzle-title">🏆 ACHIEVEMENTS</span>
+      <button class="puzzle-close" onclick="closeAchievements()">✕</button>
+    </div>
+    <div class="puzzle-body" id="achievements-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════════ -->
+<script src="{{ url_for('static', filename='js/game-data.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game-engine.js') }}"></script>
+<script>
+/* ── EXTRA UI FUNCTIONS NOT IN ENGINE ─────────────────── */
+
+/* Continue last save */
+function continueLastSave() {
+  const saves = loadAllSaves();
+  const lastCase = Object.keys(saves)[0];
+  if (lastCase) startCase(lastCase);
+  else showCaseSelect();
+}
+
+/* Tool toggle — also toggle UV indicator */
+const _origToggleTool = toggleTool;
+toggleTool = function(tool) {
+  _origToggleTool(tool);
+  const uvi = document.getElementById('uv-indicator');
+  if (uvi) uvi.style.display = (GS.activeTool === 'uv') ? 'block' : 'none';
+};
+
+/* Computer terminal special puzzle */
+function openComputerTerminal() {
+  const puzzle = getPuzzle('puzzle_computer');
+  if (!puzzle) return;
+  if (GS.solvedPuzzles.includes('puzzle_computer')) {
+    // already solved — open desktop directly
+    document.getElementById('computer-login-screen').style.display = 'none';
+    document.getElementById('computer-desktop').style.display = 'block';
+    document.getElementById('puzzle-computer-special').classList.add('open');
+    GS.activePuzzleId = 'puzzle_computer';
+    return;
+  }
+  document.getElementById('computer-login-screen').style.display = 'block';
+  document.getElementById('computer-desktop').style.display = 'none';
+  document.getElementById('comp-user').value = '';
+  document.getElementById('comp-pass').value = '';
+  document.getElementById('comp-feedback').className = 'puzzle-feedback';
+  document.getElementById('puzzle-computer-special').classList.add('open');
+  GS.activePuzzleId = 'puzzle_computer';
+  document.getElementById('comp-pass').setAttribute('type','password');
+  // re-add hint from puzzle data
+  const hintEl = document.querySelector('#computer-login-screen [data-hint]');
+  if (!hintEl) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-family:var(--font-mono);font-size:.65rem;color:var(--muted);margin-bottom:12px';
+    hint.textContent = puzzle.hint;
+    document.getElementById('computer-login-screen').prepend(hint);
+  }
+}
+
+function submitComputerLogin() {
+  const puzzle = getPuzzle(GS.activePuzzleId || 'puzzle_computer');
+  if (!puzzle) return;
+  const user = (document.getElementById('comp-user')?.value || '').trim().toUpperCase();
+  const pass = (document.getElementById('comp-pass')?.value || '').trim().toUpperCase();
+  const combined = pass || user;
+  const fb = document.getElementById('comp-feedback');
+
+  if (combined === puzzle.solution.toUpperCase() || pass === puzzle.solution.toUpperCase()) {
+    if (fb) { fb.className = 'puzzle-feedback success'; fb.textContent = '✓ LOGIN SUCCESSFUL'; }
+    setTimeout(() => {
+      document.getElementById('computer-login-screen').style.display = 'none';
+      document.getElementById('computer-desktop').style.display = 'block';
+      onPuzzleSolved(puzzle);
+    }, 800);
+  } else {
+    if (fb) { fb.className = 'puzzle-feedback error'; fb.textContent = '✗ Authentication failed. Review the investigation notes.'; }
+  }
+}
+
+function openComputerApp(app) {
+  const out = document.getElementById('comp-app-output');
+  if (!out) return;
+  const content = {
+    files: `> LISTING FILES...\n  /CASES/CV-2847-BREACH.enc  [ENCRYPTED]\n  /CASES/WITNESS-LIST.doc    [READ-ONLY]\n  /LOGS/CHAIN-OF-CUSTODY.log [MODIFIED: 09:42]\n  /DELETED/ [3 items — recovery pending]`,
+    cctv:  `> CCTV SYSTEM\n  CAM 4F-01: OFFLINE (disabled 09:52)\n  CAM 4F-02: ACTIVE\n  LAST EVENT: 09:44 — Person exits room 4F-12 carrying bag\n  > TYPE 'playback' to review footage`,
+    email: `> INBOX\n  FROM: d.reed@facility.net\n  TO: j.cole@facility.net\n  SUBJ: Maintenance window tonight\n  TIME: 18:34\n  "I'll be doing a system check tonight around 9. You may see some activity on the logs — routine maintenance."\n  ⚠ NOTE: This email was received 3 hours before incident`,
+    logs:  `> ACCESS LOG — 4TH FLOOR\n  09:03  A.MORGAN  — Security check\n  09:11  D.REED    — Entry via stairwell\n  09:16  [UNKNOWN] — Room 4F-12 entered\n  09:17  d.reed    — COMPUTER LOGIN (credentials used)\n  09:42  d.reed    — FILE DELETED: CV-2847\n  09:44  [UNKNOWN] — Exit\n  09:52  SYSTEM    — CAM 4F-01 DISABLED (remote command)`,
+    deleted: `> RECOVERING DELETED FILES...\n  FOUND: CV-2847-BREACH (partial)\n  "Subject transferred files to external party. Chain of custody broken. Evidence of tampering at evidence locker 14-B."\n  FILE STATUS: Partially overwritten. Forensic recovery: 78%`,
+    usb: `> USB DEVICE LOG\n  09:17 — Device inserted: SN-ERD-40921 (32GB)\n  09:42 — Files copied: 3 items\n  09:43 — Device removed\n  DEVICE LAST SEEN: J.Cole desk area\n  ⚠ DEVICE CURRENTLY MISSING`
+  };
+  out.textContent = content[app] || '> No data.';
+  if (app === 'logs' || app === 'deleted' || app === 'usb') {
+    // Auto-analyze relevant evidence
+    if (!GS.analyzedEvidence.includes('E007') && GS.inventory.includes('E007')) analyzeEvidence('E007');
+    if (!GS.analyzedEvidence.includes('E008') && GS.inventory.includes('E008')) analyzeEvidence('E008');
+  }
+}
+
+/* Override inspectObject to route computer to special terminal */
+const _origInspect = inspectObject;
+inspectObject = function(objId) {
+  if (objId === 'obj_computer') {
+    openComputerTerminal();
+    return;
+  }
+  _origInspect(objId);
+};
+
+/* Settings */
+function showSettings() {
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+
+let soundOn = true, musicOn = false, motionReduced = false;
+function toggleSound() {
+  soundOn = !soundOn;
+  const btn1 = document.getElementById('sound-btn');
+  const btn2 = document.getElementById('set-sound');
+  [btn1, btn2].forEach(b => { if (b) { b.textContent = soundOn ? '🔊 SFX' : '🔇 SFX'; b.classList.toggle('on', soundOn); } });
+}
+function toggleMusic() {
+  musicOn = !musicOn;
+  const btn1 = document.getElementById('music-btn');
+  const btn2 = document.getElementById('set-music');
+  [btn1, btn2].forEach(b => { if (b) { b.textContent = musicOn ? '🎵 ON' : '🎵 OFF'; b.classList.toggle('on', musicOn); } });
+}
+function toggleMotion() {
+  motionReduced = !motionReduced;
+  const btn = document.getElementById('set-motion');
+  if (btn) { btn.textContent = motionReduced ? 'ON' : 'OFF'; btn.classList.toggle('on', motionReduced); }
+  document.body.style.setProperty('--t', motionReduced ? '0s' : '.18s');
+}
+
+/* Achievements panel */
+function showAchievements() {
+  const body = document.getElementById('achievements-body');
+  if (body) {
+    body.innerHTML = GAME_DATA.achievements.map(a => {
+      const unlocked = GS.achievements.includes(a.id);
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px;margin-bottom:6px;
+                           background:var(--bg-mid);border:1px solid ${unlocked ? 'var(--cyan)' : 'var(--border)'};
+                           border-radius:var(--r);opacity:${unlocked ? 1 : .45}">
+        <span style="font-size:1.5rem">${a.icon}</span>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:.72rem;color:${unlocked ? 'var(--cyan)' : 'var(--muted)'}">${a.title}</div>
+          <div style="font-size:.72rem;color:var(--muted)">${a.desc}</div>
+        </div>
+        ${unlocked ? '<span style="margin-left:auto;color:var(--green);font-size:.7rem">✓ UNLOCKED</span>' : ''}
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('achievements-modal').classList.add('open');
+}
+function closeAchievements() {
+  document.getElementById('achievements-modal').classList.remove('open');
+}
+
+/* Clear saves */
+function clearAllSaves() {
+  if (confirm('Clear ALL investigation saves? This cannot be undone.')) {
+    GAME_DATA.cases.forEach(c => localStorage.removeItem(`cv_save_${c.id}`));
+    localStorage.removeItem('cv_unlocks');
+    alert('All saves cleared.');
+    closeSettings();
+    location.reload();
+  }
+}
+
+/* Evidence progress bar */
+const _origCollect = collectEvidence;
+collectEvidence = function(evidenceId, objId) {
+  _origCollect(evidenceId, objId);
+  const bar = document.getElementById('ev-progress-bar');
+  if (bar) {
+    const pct = (GS.inventory.length / (getCase()?.evidenceTotal || 12)) * 100;
+    bar.style.width = pct + '%';
+  }
+};
+
+/* Pattern puzzle — attach proper hints */
+const _origOpenPuzzle = openPuzzle;
+openPuzzle = function(puzzleId) {
+  const puzzle = getPuzzle(puzzleId);
+  if (!puzzle) return;
+  // After the overlay opens, inject the hint into correct element
+  setTimeout(() => {
+    const hintEl = document.getElementById('pat-hint') || document.getElementById('combo-hint') || document.getElementById('pw-hint');
+    if (hintEl && puzzle.hint) hintEl.textContent = puzzle.hint;
+  }, 50);
+  _origOpenPuzzle(puzzleId);
+};
+
+/* Keyboard shortcut overlay */
+document.addEventListener('keydown', e => {
+  if (GS.screen === 'game') {
+    if (e.key === '1') openPanel('lab');
+    if (e.key === '2') openPanel('suspects');
+    if (e.key === '3') openPanel('board');
+    if (e.key === '4') openPanel('timeline');
+    if (e.key === '5') openPanel('theory');
+    if (e.key === '6') openPanel('report');
+  }
+});
+
+/* Room description update */
+const roomDescriptions = {
+  office:   'INVESTIGATION OFFICE — FLOOR 4',
+  archive:  'ARCHIVE ROOM — FLOOR 4',
+  security: 'SECURITY CONTROL ROOM — FLOOR 4',
+  server:   'SERVER ROOM — BASEMENT LEVEL'
+};
+
+const _origChangeRoom = changeRoom;
+changeRoom = function(roomId) {
+  _origChangeRoom(roomId);
+  const d = document.getElementById('room-description');
+  if (d) d.textContent = roomDescriptions[roomId] || roomId.toUpperCase();
+};
+
+/* Auto-save on visibility change */
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && GS.screen === 'game') autoSave();
+});
+
+/* Override openPasswordPuzzle to set hint text */
+const _origPwPuzzle = openPasswordPuzzle;
+openPasswordPuzzle = function(puzzle) {
+  _origPwPuzzle(puzzle);
+  setTimeout(() => {
+    const hintEl = document.getElementById('pw-hint');
+    if (hintEl && puzzle.hint) hintEl.textContent = puzzle.hint;
+  }, 50);
+};
+
+/* Override openComboPuzzle to set hint text */
+const _origComboPuzzle = openComboPuzzle;
+openComboPuzzle = function(puzzle) {
+  _origComboPuzzle(puzzle);
+  setTimeout(() => {
+    const hintEl = document.getElementById('combo-hint');
+    if (hintEl && puzzle.hint) hintEl.textContent = puzzle.hint;
+  }, 50);
+};
+
+/* Override openPatternPuzzle to set hint text */
+const _origPatPuzzle = openPatternPuzzle;
+openPatternPuzzle = function(puzzle) {
+  _origPatPuzzle(puzzle);
+  setTimeout(() => {
+    const hintEl = document.getElementById('pat-hint');
+    if (hintEl && puzzle.hint) hintEl.textContent = puzzle.hint;
+  }, 50);
+};
+
+/* Welcome toast when entering crime scene */
+const _origEnter = enterCrimeScene;
+enterCrimeScene = function() {
+  _origEnter();
+  setTimeout(() => {
+    notify('🔍 INVESTIGATION STARTED — Explore the scene. Press F for UV Scanner. Press H for hints.', 'info', 5000);
+  }, 600);
+};
+</script>
+</body>
+</html>

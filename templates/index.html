@@ -1,45 +1,61 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>CyberVault — Murder Mystery Escape Room</title>
-<meta name="description" content="First-person murder mystery escape room. 12 atmospheric crime scenes. AI suspects. UV evidence. Solve the case."/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}"/>
-<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>CyberVault — Forensic Investigation Platform</title>
+  <meta name="description" content="CyberVault is an immersive forensic investigation platform combining a crime-scene game, interactive forensic lab, and AI assistant."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}"/>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
 </head>
 <body>
 
-<!-- NAV -->
+<!-- Custom cursor -->
+<div id="cv-cursor-ring"></div>
+<div id="cv-cursor-dot"></div>
+
+<!-- ═══ NAV ═══════════════════════════════════════════════════ -->
 <header class="cv-nav" id="cv-nav">
   <div class="cv-nav-inner">
-    <a class="cv-brand" href="#hero">
+    <a class="cv-brand" href="#">
       <svg class="cv-brand-icon" viewBox="0 0 36 36" fill="none">
-        <circle cx="18" cy="18" r="16" stroke="#c8a86b" stroke-width="1.8"/>
-        <circle cx="18" cy="18" r="9"  stroke="#c8a86b" stroke-width="1.4"/>
-        <circle cx="18" cy="18" r="3"  fill="#c8a86b"/>
-        <line x1="18" y1="2"  x2="18" y2="9"  stroke="#c8a86b" stroke-width="1.4"/>
-        <line x1="18" y1="27" x2="18" y2="34" stroke="#c8a86b" stroke-width="1.4"/>
-        <line x1="2"  y1="18" x2="9"  y2="18" stroke="#c8a86b" stroke-width="1.4"/>
-        <line x1="27" y1="18" x2="34" y2="18" stroke="#c8a86b" stroke-width="1.4"/>
+        <circle cx="18" cy="18" r="16" stroke="#4a9eff" stroke-width="2"/>
+        <circle cx="18" cy="18" r="9"  stroke="#4a9eff" stroke-width="1.5"/>
+        <circle cx="18" cy="18" r="3"  fill="#4a9eff"/>
+        <line x1="18" y1="2"  x2="18" y2="9"  stroke="#4a9eff" stroke-width="1.5"/>
+        <line x1="18" y1="27" x2="18" y2="34" stroke="#4a9eff" stroke-width="1.5"/>
+        <line x1="2"  y1="18" x2="9"  y2="18" stroke="#4a9eff" stroke-width="1.5"/>
+        <line x1="27" y1="18" x2="34" y2="18" stroke="#4a9eff" stroke-width="1.5"/>
       </svg>
       <div class="cv-brand-text">
         <span class="cv-brand-name">CYBERVAULT</span>
-        <span class="cv-brand-tag">MURDER MYSTERY</span>
+        <span class="cv-brand-tag">FORENSIC PLATFORM</span>
       </div>
     </a>
+
     <nav class="cv-nav-links" id="cv-nav-links">
       <a class="cv-nav-link active" href="#hero">HOME</a>
       <a class="cv-nav-link" href="#about">ABOUT</a>
-      <a class="cv-nav-link" href="#rooms">ROOMS</a>
       <a class="cv-nav-link" href="#features">FEATURES</a>
-      <a class="cv-nav-link" href="#ai-section">AI</a>
+      <a class="cv-nav-link" href="#game-section">GAME</a>
+      <a class="cv-nav-link" href="#lab-section">LAB</a>
+      <a class="cv-nav-link" href="#ai-section">AI ASSISTANT</a>
       <a class="cv-nav-link" href="#contact">CONTACT</a>
+      <a class="cv-nav-link" href="/game"
+         style="color:#00d4ff;border:1px solid rgba(0,212,255,.35);padding:4px 12px;border-radius:4px;font-weight:600">
+        🎮 PLAY GAME
+      </a>
     </nav>
-    <div style="display:flex;align-items:center;gap:10px">
-      <a class="cv-btn-play" href="/cybervault-fp">INVESTIGATE NOW</a>
+
+    <div class="cv-nav-actions">
+      <button class="cv-chat-toggle-btn" id="nav-chat-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        AI CHAT
+        <div class="chat-live-dot"></div>
+      </button>
+      <button class="cv-btn-play" onclick="window.location.href='/game'">PLAY NOW</button>
       <button class="cv-hamburger" id="cv-hamburger" aria-label="Menu">
         <span></span><span></span><span></span>
       </button>
@@ -47,416 +63,440 @@
   </div>
 </header>
 
-<!-- HERO -->
+<!-- ═══ HERO ════════════════════════════════════════════════ -->
 <section class="cv-hero" id="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-grid"></div>
-  <div class="hero-vignette"></div>
+  <div class="hero-layer-bg"></div>
+  <div class="hero-layer-grid"></div>
+  <div class="hero-layer-vignette"></div>
+  <div class="hero-layer-scan" aria-hidden="true"></div>
+
+  <div class="hero-ev-marker" style="top:38%;left:28%" data-ev="Blood Sample" data-num="1">1</div>
+  <div class="hero-ev-marker" style="top:50%;left:52%" data-ev="Torn document" data-num="2">2</div>
+  <div class="hero-ev-marker" style="top:32%;left:64%" data-ev="Latent fingerprint" data-num="3">3</div>
+  <div class="hero-ev-marker" style="top:24%;left:74%" data-ev="CCTV 20:51" data-num="4">4</div>
+
+  <div class="hero-fp-watermark" aria-hidden="true">
+    <svg viewBox="0 0 280 280" fill="none">
+      <circle cx="140" cy="140" r="130" stroke="#4a9eff" stroke-width=".8" opacity=".2"/>
+      <circle cx="140" cy="140" r="108" stroke="#4a9eff" stroke-width=".8" opacity=".25"/>
+      <circle cx="140" cy="140" r="86"  stroke="#4a9eff" stroke-width="1"  opacity=".3"/>
+      <circle cx="140" cy="140" r="64"  stroke="#4a9eff" stroke-width="1.2" opacity=".36"/>
+      <circle cx="140" cy="140" r="42"  stroke="#4a9eff" stroke-width="1.4" opacity=".42"/>
+      <circle cx="140" cy="140" r="20"  stroke="#4a9eff" stroke-width="1.8" opacity=".5"/>
+      <circle cx="140" cy="140" r="5"   fill="#4a9eff" opacity=".6"/>
+    </svg>
+  </div>
+  <div class="hero-particles" id="hero-particles"></div>
+
   <div class="hero-content">
-    <div class="reveal reveal-left">
-      <p class="hero-eyebrow">
-        <span class="eyebrow-line"></span>
-        FIRST-PERSON FORENSIC INVESTIGATION
-        <span class="eyebrow-line"></span>
-      </p>
+    <div class="hero-left reveal-left">
+      <div class="hero-kicker">
+        <span class="kicker-line"></span>
+        A FORENSIC INVESTIGATION PLATFORM
+        <span class="kicker-line"></span>
+      </div>
       <h1 class="hero-title">
-        THE MURDER<br>WAS NOT<br><span class="accent">AN ACCIDENT.</span>
+        FIND THE<br>
+        <span class="hero-title-accent">TRUTH.</span><br>
+        SOLVE THE CASE.
       </h1>
       <p class="hero-desc">
-        Lord Victor Vance is dead. The vault is sealed. Three suspects. Twelve crime scenes. 
-        Every UV-hidden clue leads closer to the truth — if you're brave enough to find it.
+        Step into the shoes of a forensic analyst. Explore crime scenes, collect evidence,
+        run lab analysis, and use our AI assistant to master real forensic science.
+        Every detail matters.
       </p>
       <div class="hero-actions">
-        <a class="btn-primary" href="/cybervault-fp">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
-          ENTER THE VAULT
-        </a>
-        <a class="btn-secondary" href="/cybervault-horror">
-          ☣ HORROR MODE
-        </a>
+        <button class="cv-btn-primary" id="hero-play-btn" onclick="window.location.href='/game'">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M8 5v14l11-7z"/></svg>
+          ENTER THE GAME
+        </button>
+        <button class="cv-btn-secondary" id="hero-ai-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          ASK FORENSIC AI
+        </button>
       </div>
-      <div class="hero-stats">
-        <div class="stat"><strong class="count-up" data-target="12">0</strong><span>CRIME SCENES</span></div>
-        <div class="stat-div"></div>
-        <div class="stat"><strong class="count-up" data-target="3">0</strong><span>AI SUSPECTS</span></div>
-        <div class="stat-div"></div>
-        <div class="stat"><strong class="count-up" data-target="36">0</strong><span>EVIDENCE ITEMS</span></div>
-        <div class="stat-div"></div>
-        <div class="stat"><strong class="count-up" data-target="5">0</strong><span>PUZZLE TYPES</span></div>
+      <div class="hero-stats-row">
+        <div class="hero-stat"><strong class="count-up" data-target="50">0</strong><span>Evidence Items</span></div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat"><strong class="count-up" data-target="15">0</strong><span>Forensic Tools</span></div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat"><strong class="count-up" data-target="10">0</strong><span>Case Files</span></div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat"><strong class="count-up" data-target="18">0</strong><span>AI Topics</span></div>
       </div>
     </div>
 
-    <!-- Active case card -->
-    <div class="case-card reveal reveal-right">
+    <!-- Case card -->
+    <div class="hero-case-card reveal-right">
+      <div class="case-card-glow"></div>
+      <div class="case-card-top-bar"></div>
       <div class="case-card-head">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        ACTIVE CASE FILE
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4a9eff" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        ACTIVE CASE
       </div>
-      <div class="case-num">CASE #9042</div>
-      <h3 class="case-title">THE VAULT MURDERS</h3>
-      <p class="case-desc">Lord Victor Vance found dead in Sector B. Neural implant corrupted from the inside. Dr. Aris Thorne's access code on the blast door. The vault's UV-hidden secrets must be decoded before time runs out.</p>
+      <div class="case-num">CASE #047</div>
+      <h3 class="case-title">THE ABANDONED WAREHOUSE</h3>
+      <p class="case-desc">A body has been found in an abandoned warehouse. Physical and digital evidence present. Your investigation begins now.</p>
       <div class="case-meta">
-        <span class="badge badge-open">● OPEN</span>
-        <span class="badge badge-urgent">CRITICAL</span>
+        <span class="case-badge open">● OPEN</span>
+        <span class="case-badge priority">HIGH PRIORITY</span>
       </div>
-      <a class="btn-case" href="/cybervault-fp">
+      <button class="btn-case-file">
         VIEW CASE FILE
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
     </div>
+  </div>
+
+  <div class="hero-scroll-cue" id="hero-scroll">
+    <div class="scroll-mouse"><div class="scroll-wheel"></div></div>
+    <span>SCROLL</span>
   </div>
 </section>
 
-<!-- WORKFLOW STRIP -->
+<!-- ═══ WORKFLOW STRIP ══════════════════════════════════════ -->
 <div class="workflow-strip">
   <div class="wf-inner">
     <div class="wf-step"><span class="wf-num">01</span><span>ARRIVE</span></div>
-    <div class="wf-arrow">→</div>
+    <span class="wf-arrow">→</span>
     <div class="wf-step"><span class="wf-num">02</span><span>EXPLORE</span></div>
-    <div class="wf-arrow">→</div>
-    <div class="wf-step"><span class="wf-num">03</span><span>UV SCAN</span></div>
-    <div class="wf-arrow">→</div>
-    <div class="wf-step"><span class="wf-num">04</span><span>INTERROGATE</span></div>
-    <div class="wf-arrow">→</div>
-    <div class="wf-step"><span class="wf-num">05</span><span>DECODE</span></div>
-    <div class="wf-arrow">→</div>
-    <div class="wf-step" style="color:var(--accent2)"><span class="wf-num">06</span><span>SOLVE</span></div>
+    <span class="wf-arrow">→</span>
+    <div class="wf-step"><span class="wf-num">03</span><span>COLLECT</span></div>
+    <span class="wf-arrow">→</span>
+    <div class="wf-step"><span class="wf-num">04</span><span>ANALYZE</span></div>
+    <span class="wf-arrow">→</span>
+    <div class="wf-step"><span class="wf-num">05</span><span>CONNECT</span></div>
+    <span class="wf-arrow">→</span>
+    <div class="wf-step" style="color:var(--accent)"><span class="wf-num">06</span><span>SOLVE</span></div>
   </div>
 </div>
 
-<!-- ABOUT -->
-<section class="cv-section" id="about">
+<!-- ═══ ABOUT ════════════════════════════════════════════════ -->
+<section id="about">
   <div class="cv-container">
-    <p class="section-eyebrow">ABOUT THE CASE</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center">
-      <div class="reveal reveal-left">
-        <h2 class="section-title">IMMERSIVE MURDER<br><span class="accent">MYSTERY</span></h2>
-        <p style="font-size:.9rem;color:var(--txt2);margin-bottom:14px;line-height:1.75">
-          CyberVault is a first-person murder mystery escape room where every clue matters. Walk through 12 handcrafted crime scenes, deploy UV blacklight to reveal invisible evidence, interrogate AI-powered suspects, and solve 5 different puzzle types.
-        </p>
-        <p style="font-size:.9rem;color:var(--txt2);margin-bottom:22px;line-height:1.75">
-          Built for puzzle enthusiasts and crime fiction fans. No firearms, no violence — just pure deduction, atmosphere, and the relentless pressure of a ticking clock.
-        </p>
-        <div style="display:flex;flex-wrap:wrap;gap:8px">
-          <span class="ai-chip">Murder Mystery</span>
-          <span class="ai-chip">First-Person 3D</span>
-          <span class="ai-chip">AI Suspects</span>
-          <span class="ai-chip">UV Evidence</span>
-          <span class="ai-chip">Escape Room</span>
-          <span class="ai-chip">Multiplayer</span>
+    <div class="section-label">ABOUT THE PLATFORM</div>
+    <div class="about-grid">
+      <div class="about-text reveal-left">
+        <h2>IMMERSIVE FORENSIC<br><span class="text-accent">INVESTIGATION</span></h2>
+        <p>CyberVault is a complete forensic investigation platform that combines an interactive crime-scene game,
+        a professional forensic lab, and an AI assistant trained on real forensic science — from DNA analysis and
+        fingerprint matching to CCTV forensics and digital evidence handling.</p>
+        <p>Built for students, enthusiasts, and professionals who want to understand how real investigations work —
+        without ever touching a live scene.</p>
+        <div class="about-tags">
+          <span class="cv-tag">Forensic Investigation</span>
+          <span class="cv-tag">Crime Thriller</span>
+          <span class="cv-tag">AI-Powered</span>
+          <span class="cv-tag">Educational</span>
+          <span class="cv-tag">Interactive Lab</span>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="reveal reveal-right">
-        <div class="case-card" style="text-align:center;padding:22px">
-          <div style="font-family:var(--serif);font-size:2rem;color:var(--accent2);margin-bottom:6px">12</div>
-          <div style="font-family:var(--mono);font-size:.62rem;color:var(--txt2);letter-spacing:1px">CRIME SCENES</div>
+      <div class="about-cards reveal-right">
+        <div class="about-card"><strong class="count-up" data-target="50">0</strong><span>+</span><p>Evidence items across all cases</p></div>
+        <div class="about-card"><strong class="count-up" data-target="18">0</strong><span></span><p>AI forensic topics trained</p></div>
+        <div class="about-card"><strong class="count-up" data-target="5">0</strong><span></span><p>Forensic mini-games in the lab</p></div>
+        <div class="about-card"><strong class="count-up" data-target="100">0</strong><span>%</span><p>Evidence-based deduction system</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FEATURES ════════════════════════════════════════════ -->
+<section id="features" class="cv-section-dark">
+  <div class="cv-container">
+    <div class="section-label">GAME FEATURES</div>
+    <h2 class="section-heading">EVERY DETAIL <span class="text-accent">TELLS A STORY</span></h2>
+    <div class="features-grid">
+      <div class="feat-card reveal-up" data-delay="0">
+        <div class="feat-icon">🔍</div>
+        <h3>REALISTIC INVESTIGATION</h3>
+        <p>Explore a detailed, atmospheric crime scene. Interact with physical objects, discover hidden clues, and build your case file piece by piece.</p>
+        <div class="feat-line"></div>
+      </div>
+      <div class="feat-card reveal-up" data-delay="100">
+        <div class="feat-icon">🧪</div>
+        <h3>FORENSIC LAB MINI-GAMES</h3>
+        <p>Run fingerprint comparison, DNA strand analysis, CCTV timeline scrubbing, document reassembly, and timeline reconstruction — all interactive.</p>
+        <div class="feat-line"></div>
+      </div>
+      <div class="feat-card reveal-up" data-delay="200">
+        <div class="feat-icon">🧩</div>
+        <h3>EVIDENCE BOARD</h3>
+        <p>Connect evidence to suspects, locations, and timestamps on a visual cork board. Watch connections form as your analysis deepens.</p>
+        <div class="feat-line"></div>
+      </div>
+      <div class="feat-card reveal-up" data-delay="300">
+        <div class="feat-icon">🤖</div>
+        <h3>AI FORENSIC ASSISTANT</h3>
+        <p>Ask our ForensicAI about any topic — DNA, fingerprints, blood spatter, digital forensics, admissibility, chain of custody, and more.</p>
+        <div class="feat-line"></div>
+      </div>
+      <div class="feat-card reveal-up" data-delay="400">
+        <div class="feat-icon">🧠</div>
+        <h3>LOGICAL DEDUCTION</h3>
+        <p>Answer WHO, WHEN, WHERE, and HOW questions using only the evidence you've gathered. No guesswork — pure investigative reasoning.</p>
+        <div class="feat-line"></div>
+      </div>
+      <div class="feat-card reveal-up" data-delay="500">
+        <div class="feat-icon">📋</div>
+        <h3>INVESTIGATION REPORT</h3>
+        <p>Submit a full investigation report and receive a scored evaluation based on the accuracy of your suspect, timeline, and evidence selection.</p>
+        <div class="feat-line"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ GAME LAUNCHER ════════════════════════════════════════ -->
+<section id="game-section">
+  <div class="cv-container">
+    <div class="section-label">THE GAME</div>
+    <div class="game-launch-grid">
+      <div class="game-launch-left reveal-left">
+        <h2>CASE #047 —<br><span class="text-accent">THE ABANDONED WAREHOUSE</span></h2>
+        <p class="game-launch-desc">A complete forensic investigation experience. Eight interactive evidence items, five lab mini-games, a live evidence board, and a full deduction report system.</p>
+        <div class="game-steps">
+          <div class="gs-item">
+            <div class="gs-icon">🚔</div>
+            <div><strong>Enter the Scene</strong><p>Navigate an atmospheric warehouse with hidden evidence scattered throughout.</p></div>
+          </div>
+          <div class="gs-item">
+            <div class="gs-icon">🧤</div>
+            <div><strong>Collect Evidence</strong><p>Examine, photograph, and collect physical evidence from the scene.</p></div>
+          </div>
+          <div class="gs-item">
+            <div class="gs-icon">🔬</div>
+            <div><strong>Run Lab Analysis</strong><p>Use fingerprint, DNA, CCTV, document, and timeline tools to extract findings.</p></div>
+          </div>
+          <div class="gs-item">
+            <div class="gs-icon">⚖️</div>
+            <div><strong>Submit Your Report</strong><p>Identify the suspect, cite your evidence, and close the case.</p></div>
+          </div>
         </div>
-        <div class="case-card" style="text-align:center;padding:22px">
-          <div style="font-family:var(--serif);font-size:2rem;color:var(--accent2);margin-bottom:6px">3</div>
-          <div style="font-family:var(--mono);font-size:.62rem;color:var(--txt2);letter-spacing:1px">AI SUSPECTS</div>
+        <button class="cv-btn-primary" style="margin-top:28px">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M8 5v14l11-7z"/></svg>
+          LAUNCH INVESTIGATION
+        </button>
+      </div>
+
+      <div class="game-preview-card reveal-right">
+        <div class="gpc-screen">
+          <div class="gpc-scan" aria-hidden="true"></div>
+          <div class="gpc-grid"  aria-hidden="true"></div>
+          <div class="gpc-scene">
+            <div class="gpc-light"></div>
+            <div class="gpc-floor"></div>
+            <div class="gpc-obj gpc-door">🚪</div>
+            <div class="gpc-obj gpc-body">🧍</div>
+            <div class="gpc-obj gpc-phone">📱</div>
+            <div class="gpc-obj gpc-glove">🧤</div>
+            <div class="gpc-marker gm1">1</div>
+            <div class="gpc-marker gm2">3</div>
+            <div class="gpc-marker gm3">5</div>
+          </div>
         </div>
-        <div class="case-card" style="text-align:center;padding:22px">
-          <div style="font-family:var(--serif);font-size:2rem;color:var(--accent2);margin-bottom:6px">5</div>
-          <div style="font-family:var(--mono);font-size:.62rem;color:var(--txt2);letter-spacing:1px">PUZZLE TYPES</div>
-        </div>
-        <div class="case-card" style="text-align:center;padding:22px">
-          <div style="font-family:var(--serif);font-size:2rem;color:var(--accent2);margin-bottom:6px">∞</div>
-          <div style="font-family:var(--mono);font-size:.62rem;color:var(--txt2);letter-spacing:1px">REPLAYABILITY</div>
+        <div class="gpc-footer">
+          <div class="gpc-status">
+            <span class="gpc-dot"></span>
+            <span id="gpc-status-text">SCENE READY — Click to begin</span>
+          </div>
+          <button class="gpc-play-btn">▶ ENTER</button>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CRIME SCENES -->
-<section class="cv-section cv-section-dark" id="rooms">
+<!-- ═══ LAB ══════════════════════════════════════════════════ -->
+<section id="lab-section" class="cv-section-dark">
   <div class="cv-container">
-    <p class="section-eyebrow">THE CRIME SCENES</p>
-    <h2 class="section-title reveal reveal-up">12 ATMOSPHERIC <span class="accent">LOCATIONS</span></h2>
-    <div class="rooms-grid">
-      <div class="room-card reveal reveal-up" data-delay="0">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#040810,#0a1828)">
-          🏥<div class="room-num">01</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Surgical Vault</h4>
-          <p>Tiled floors, operating table, UV cipher on the wall. The first body was found here.</p>
-        </div>
+    <div class="section-label">FORENSIC LAB</div>
+    <h2 class="section-heading">FIVE INTERACTIVE <span class="text-accent">MINI-GAMES</span></h2>
+    <div class="lab-cards-row">
+      <div class="lab-preview-card reveal-up" data-delay="0">
+        <div class="lpc-icon">🖐️</div>
+        <div class="lpc-name">FINGERPRINT ANALYSIS</div>
+        <p>Compare latent prints against suspect profiles. Match ridge patterns to identify who was at the scene.</p>
+        <div class="lpc-bar"><div class="lpc-fill" data-width="92%"></div></div>
+        <span class="lpc-acc">92% accuracy</span>
       </div>
-      <div class="room-card reveal reveal-up" data-delay="80">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#0a0600,#1a1000)">
-          🗺️<div class="room-num">02</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Detective Lab</h4>
-          <p>World map board, glowing artifacts, combination safe. Warm amber light hides the truth.</p>
-        </div>
+      <div class="lab-preview-card reveal-up" data-delay="100">
+        <div class="lpc-icon">🧬</div>
+        <div class="lpc-name">DNA STRAND ANALYSIS</div>
+        <p>Visualise DNA base sequences and compare biological samples against suspect profiles in CODIS.</p>
+        <div class="lpc-bar"><div class="lpc-fill" data-width="99%"></div></div>
+        <span class="lpc-acc">99.9% accuracy</span>
       </div>
-      <div class="room-card reveal reveal-up" data-delay="160">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#060504,#120a08)">
-          ⛓️<div class="room-num">03</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Prison Cell</h4>
-          <p>Iron bars, chains, bloodstained stone. Pressure plate sequence to escape.</p>
-        </div>
+      <div class="lab-preview-card reveal-up" data-delay="200">
+        <div class="lpc-icon">📹</div>
+        <div class="lpc-name">CCTV TIMELINE</div>
+        <p>Scrub through surveillance footage, identify key events, and mark timestamps for the investigation report.</p>
+        <div class="lpc-bar"><div class="lpc-fill" data-width="78%"></div></div>
+        <span class="lpc-acc">Timeline verified</span>
       </div>
-      <div class="room-card reveal reveal-up" data-delay="240">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#080402,#1a0c04)">
-          🛡️<div class="room-num">04</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Medieval Hall</h4>
-          <p>Heraldic banners, goblets, round table. A colour sequence guards the exit.</p>
-        </div>
+      <div class="lab-preview-card reveal-up" data-delay="300">
+        <div class="lpc-icon">📄</div>
+        <div class="lpc-name">DOCUMENT ASSEMBLY</div>
+        <p>Reassemble torn document halves and reveal hidden messages that link suspects to the crime.</p>
+        <div class="lpc-bar"><div class="lpc-fill" data-width="85%"></div></div>
+        <span class="lpc-acc">Message recovered</span>
       </div>
-      <div class="room-card reveal reveal-up" data-delay="0">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#060408,#120a14)">
-          💎<div class="room-num">05</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Castle Corridor</h4>
-          <p>Stone archways, purple orbs, mirror alignment puzzle. Ancient and dangerous.</p>
-        </div>
-      </div>
-      <div class="room-card reveal reveal-up" data-delay="80">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#080004,#180004)">
-          🚪<div class="room-num">06</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Haunted Hallway</h4>
-          <p>Dark red, occult symbols, chandelier. The code is hidden in what evil fears.</p>
-        </div>
-      </div>
-      <div class="room-card reveal reveal-up" data-delay="160">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#060402,#140e06)">
-          🎹<div class="room-num">07</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Victorian Study</h4>
-          <p>Piano, portraits, compass floor. A cipher wheel aligns to musical notes.</p>
-        </div>
-      </div>
-      <div class="room-card reveal reveal-up" data-delay="240">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#050506,#100e10)">
-          🛏️<div class="room-num">08</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Asylum Cell</h4>
-          <p>Concrete walls, chains, iron bed. A previous occupant scratched the code.</p>
-        </div>
-      </div>
-      <div class="room-card reveal reveal-up" data-delay="0">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#020608,#061408)">
-          🐉<div class="room-num">09</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Mystic Chamber</h4>
-          <p>Deep green glow, seahorse portal, elemental lanterns. Magic meets science.</p>
-        </div>
-      </div>
-      <div class="room-card reveal reveal-up" data-delay="80">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#060408,#0e0814)">
-          📌<div class="room-num">10</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Evidence Vault</h4>
-          <p>Server racks, photo board, cable sequence pressure tiles. Digital and physical.</p>
-        </div>
-      </div>
-      <div class="room-card reveal reveal-up" data-delay="160">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#040508,#08101a)">
-          🔭<div class="room-num">11</div>
-        </div>
-        <div class="room-card-body">
-          <h4>Observation Deck</h4>
-          <p>Starfield, telescope, mirror starlight alignment. The coordinates point to Vault B.</p>
-        </div>
-      </div>
-      <div class="room-card reveal reveal-up" data-delay="240">
-        <div class="room-card-vis" style="background:linear-gradient(135deg,#040404,#0a0808)">
-          💻<div class="room-num">12</div>
-        </div>
-        <div class="room-card-body">
-          <h4>The Final Vault</h4>
-          <p>Thorne's terminal, final UV message. The last door. The last truth.</p>
-        </div>
+      <div class="lab-preview-card reveal-up" data-delay="400">
+        <div class="lpc-icon">🕐</div>
+        <div class="lpc-name">TIMELINE RECONSTRUCTION</div>
+        <p>Arrange discovered events in chronological order to build the complete sequence leading to the crime.</p>
+        <div class="lpc-bar"><div class="lpc-fill" data-width="88%"></div></div>
+        <span class="lpc-acc">Sequence confirmed</span>
       </div>
     </div>
     <div style="text-align:center;margin-top:36px">
-      <a class="btn-primary" href="/cybervault-fp">ENTER ALL 12 ROOMS</a>
+      <button class="cv-btn-primary">ACCESS THE LAB</button>
     </div>
   </div>
 </section>
 
-<!-- FEATURES -->
-<section class="cv-section" id="features">
+<!-- ═══ AI ASSISTANT ═════════════════════════════════════════ -->
+<section id="ai-section">
   <div class="cv-container">
-    <p class="section-eyebrow">GAME FEATURES</p>
-    <h2 class="section-title reveal reveal-up">EVERY DETAIL <span class="accent">IS A CLUE</span></h2>
-    <div class="features-grid">
-      <div class="feat-card reveal reveal-up" data-delay="0">
-        <div class="feat-icon">🔦</div>
-        <h3>FIRST-PERSON EXPLORATION</h3>
-        <p>Full pointer-lock FPS movement. Walk through atmospheric 3D crime scenes with head-bob, spatial audio, and real-time flashlight illumination.</p>
-        <div class="feat-line"></div>
-      </div>
-      <div class="feat-card reveal reveal-up" data-delay="80">
-        <div class="feat-icon">🔮</div>
-        <h3>UV BLACKLIGHT MODE</h3>
-        <p>Toggle UV [F] to reveal fluorescent evidence invisible in white light — hidden codes, fingerprints, floor inscriptions, and blood trails.</p>
-        <div class="feat-line"></div>
-      </div>
-      <div class="feat-card reveal reveal-up" data-delay="160">
-        <div class="feat-icon">🧠</div>
-        <h3>AI SUSPECT INTERROGATION</h3>
-        <p>Question Dr. Aris Thorne, Maya Lin, and Victor Vance. Powered by Gemini AI with stress-tracking — corner them with evidence and watch them crack.</p>
-        <div class="feat-line"></div>
-      </div>
-      <div class="feat-card reveal reveal-up" data-delay="240">
-        <div class="feat-icon">🧩</div>
-        <h3>5 PUZZLE TYPES</h3>
-        <p>Keypad, combination lock, color sequence, cipher wheel, pressure plates, mirror alignment. Each room has its own puzzle mechanic.</p>
-        <div class="feat-line"></div>
-      </div>
-      <div class="feat-card reveal reveal-up" data-delay="320">
-        <div class="feat-icon">🌐</div>
-        <h3>REAL-TIME MULTIPLAYER</h3>
-        <p>Invite investigators via PeerJS peer-to-peer networking. See other players as wireframe avatars. Share evidence and solve together.</p>
-        <div class="feat-line"></div>
-      </div>
-      <div class="feat-card reveal reveal-up" data-delay="400">
-        <div class="feat-icon">🗺️</div>
-        <h3>EVIDENCE MIND MAP</h3>
-        <p>Live SVG node-graph connects clues to suspects. Workbench combines inventory items for bonus discoveries and hidden case files.</p>
-        <div class="feat-line"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- HOW IT WORKS -->
-<section class="cv-section cv-section-dark" id="how">
-  <div class="cv-container">
-    <p class="section-eyebrow">HOW TO INVESTIGATE</p>
-    <h2 class="section-title reveal reveal-up" style="text-align:center">THE <span class="accent">INVESTIGATION</span> PROCESS</h2>
-    <div class="steps-row">
-      <div class="step reveal reveal-up" data-delay="0">
-        <div class="step-circle">🚔<span class="step-num">1</span></div>
-        <div class="step-connector"></div>
-        <h4>ARRIVE</h4><p>Enter the crime scene. Absorb the atmosphere.</p>
-      </div>
-      <div class="step reveal reveal-up" data-delay="60">
-        <div class="step-circle">🔍<span class="step-num">2</span></div>
-        <div class="step-connector"></div>
-        <h4>EXPLORE</h4><p>WASD + mouse. Examine every object.</p>
-      </div>
-      <div class="step reveal reveal-up" data-delay="120">
-        <div class="step-circle">🔮<span class="step-num">3</span></div>
-        <div class="step-connector"></div>
-        <h4>UV SCAN</h4><p>Press F. Reveal hidden fluorescent evidence.</p>
-      </div>
-      <div class="step reveal reveal-up" data-delay="180">
-        <div class="step-circle">🧩<span class="step-num">4</span></div>
-        <div class="step-connector"></div>
-        <h4>PUZZLE</h4><p>Decode the exit lock with found clues.</p>
-      </div>
-      <div class="step reveal reveal-up" data-delay="240">
-        <div class="step-circle">🧠<span class="step-num">5</span></div>
-        <div class="step-connector"></div>
-        <h4>INTERROGATE</h4><p>Question AI suspects with your evidence.</p>
-      </div>
-      <div class="step reveal reveal-up" data-delay="300">
-        <div class="step-circle">✅<span class="step-num">6</span></div>
-        <h4>SOLVE</h4><p>Close the case. Convict the killer.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- AI ASSISTANT -->
-<section class="cv-section" id="ai-section">
-  <div class="cv-container">
-    <p class="section-eyebrow">FORENSIC AI</p>
-    <div class="ai-grid">
-      <div class="reveal reveal-left">
-        <h2 class="section-title">YOUR PERSONAL<br><span class="accent">FORENSIC AI</span></h2>
-        <p style="font-size:.9rem;color:var(--txt2);margin-bottom:6px;line-height:1.75">
-          Ask ForensicAI anything — DNA profiling, fingerprint analysis, blood spatter, suspect psychology, digital forensics, and more. In-game, interrogate live AI suspects via the Gemini API.
-        </p>
-        <p style="font-size:.9rem;color:var(--txt2);margin-bottom:20px;line-height:1.75">
-          Enter your Gemini API key on the game start screen for live, in-character suspect responses. Without a key, the built-in response engine handles all three suspects.
-        </p>
-        <div class="ai-topics">
-          <div class="ai-chip">🧬 DNA</div>
-          <div class="ai-chip">🖐️ Fingerprints</div>
-          <div class="ai-chip">🩸 Blood Spatter</div>
-          <div class="ai-chip">💻 Digital Forensics</div>
-          <div class="ai-chip">📹 CCTV</div>
-          <div class="ai-chip">🔫 Ballistics</div>
-          <div class="ai-chip">⚗️ Toxicology</div>
-          <div class="ai-chip">📄 Documents</div>
-          <div class="ai-chip">🔗 Chain of Custody</div>
+    <div class="section-label">FORENSIC AI</div>
+    <div class="ai-section-grid">
+      <div class="ai-section-left reveal-left">
+        <h2>YOUR PERSONAL<br><span class="text-accent">FORENSIC AI</span></h2>
+        <p>ForensicAI is trained on 18 forensic science disciplines. Ask anything about crime scene investigation,
+        digital forensics, DNA, fingerprints, ballistics, toxicology, or legal admissibility.</p>
+        <div class="ai-topics-grid">
+          <div class="ai-topic-chip">🧬 DNA Analysis</div>
+          <div class="ai-topic-chip">🖐️ Fingerprints</div>
+          <div class="ai-topic-chip">💻 Digital Forensics</div>
+          <div class="ai-topic-chip">🩸 Blood Spatter</div>
+          <div class="ai-topic-chip">📹 CCTV Analysis</div>
+          <div class="ai-topic-chip">📱 Mobile Forensics</div>
+          <div class="ai-topic-chip">🔫 Ballistics</div>
+          <div class="ai-topic-chip">⚗️ Toxicology</div>
+          <div class="ai-topic-chip">📄 Documents</div>
+          <div class="ai-topic-chip">🔗 Chain of Custody</div>
+          <div class="ai-topic-chip">🪲 Entomology</div>
+          <div class="ai-topic-chip">⚕️ Autopsy</div>
         </div>
-        <a class="btn-primary" href="/cybervault-fp" style="margin-top:24px;display:inline-flex">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
-          OPEN INVESTIGATION
-        </a>
+        <button class="cv-btn-primary" id="ai-section-open-btn" style="margin-top:24px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          OPEN AI ASSISTANT
+        </button>
       </div>
 
-      <!-- Inline AI chat preview -->
-      <div class="ai-chat-preview reveal reveal-right">
-        <div class="acp-header">
-          <div class="acp-dot"></div>
-          <span class="acp-title">ForensicAI</span>
-          <span class="acp-sub">18 Topics · Always Active</span>
+      <!-- Inline chat -->
+      <div class="ai-inline-chat reveal-right" id="ai-inline-chat">
+        <div class="aic-header">
+          <div class="aic-status-dot"></div>
+          <span class="aic-title">ForensicAI</span>
+          <span class="aic-subtitle">Trained · 18 Topics · Always On</span>
+          <button class="aic-expand" id="aic-expand-btn" title="Open chat">⤢</button>
         </div>
-        <div class="acp-msgs" id="acp-msgs">
-          <div class="acp-msg">
-            <div class="acp-msg-avatar ai">AI</div>
-            <div class="acp-msg-body">Hello, Investigator. I'm ForensicAI. Ask me about DNA, fingerprints, suspects, or any forensic discipline.</div>
+        <div class="aic-messages" id="aic-messages">
+          <div class="aic-msg ai-msg">
+            <div class="aic-msg-avatar ai-msg" style="background:var(--accent);color:#fff">AI</div>
+            <div class="aic-msg-body"><p>Hello, Investigator. I'm <strong>ForensicAI</strong> — trained on 18 forensic science topics.<br>Ask me anything about DNA, fingerprints, crime scenes, digital forensics, or any other forensic discipline.</p></div>
           </div>
         </div>
-        <div class="acp-input-row">
-          <input class="acp-input" id="acp-input" placeholder="Ask about any forensic topic…" autocomplete="off"/>
-          <button class="acp-send" id="acp-send">→</button>
+        <div class="aic-suggestions" id="aic-inline-suggestions"></div>
+        <div class="aic-input-row">
+          <input class="aic-input" id="aic-inline-input" placeholder="Ask about any forensic topic…" autocomplete="off"/>
+          <button class="aic-send-btn" id="aic-inline-send">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+          </button>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CONTACT / SUBSCRIBE -->
-<section class="cv-section cv-section-dark" id="contact">
+<!-- ═══ HOW IT WORKS ═════════════════════════════════════════ -->
+<section id="how-section" class="cv-section-dark">
+  <div class="cv-container">
+    <div class="section-label">HOW THE GAME WORKS</div>
+    <h2 class="section-heading" style="text-align:center">THE INVESTIGATION <span class="text-accent">PROCESS</span></h2>
+    <div class="how-steps-row">
+      <div class="how-step reveal-up" data-delay="0">
+        <div class="hs-circle"><span class="hs-num">1</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <div class="hs-connector"></div>
+        <h4>ARRIVE</h4><p>You receive the case file and enter the crime scene to begin your investigation.</p>
+      </div>
+      <div class="how-step reveal-up" data-delay="80">
+        <div class="hs-circle"><span class="hs-num">2</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+        <div class="hs-connector"></div>
+        <h4>EXPLORE</h4><p>Walk around the scene, click objects, examine, photograph, and collect evidence.</p>
+      </div>
+      <div class="how-step reveal-up" data-delay="160">
+        <div class="hs-circle"><span class="hs-num">3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3l-4 4-4-4"/></svg></div>
+        <div class="hs-connector"></div>
+        <h4>COLLECT</h4><p>Build your evidence inventory. Each item carries clues about who, when, and how.</p>
+      </div>
+      <div class="how-step reveal-up" data-delay="240">
+        <div class="hs-circle"><span class="hs-num">4</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9"/></svg></div>
+        <div class="hs-connector"></div>
+        <h4>ANALYZE</h4><p>Take evidence to the forensic lab. Run mini-games to extract findings.</p>
+      </div>
+      <div class="how-step reveal-up" data-delay="320">
+        <div class="hs-circle"><span class="hs-num">5</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+        <div class="hs-connector"></div>
+        <h4>CONNECT</h4><p>Pin clues to the evidence board. Connect suspects, locations, and timestamps.</p>
+      </div>
+      <div class="how-step reveal-up" data-delay="400">
+        <div class="hs-circle"><span class="hs-num">6</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg></div>
+        <h4>SOLVE</h4><p>Submit your report. Identify the perpetrator and close the case.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACT ══════════════════════════════════════════════ -->
+<section id="contact">
   <div class="cv-container">
     <div class="contact-grid">
-      <div class="reveal reveal-left">
-        <p class="section-eyebrow">STAY UPDATED</p>
-        <h2 class="section-title">NEW CASES<br><span class="accent">INCOMING</span></h2>
-        <p style="font-size:.88rem;color:var(--txt2);margin-bottom:6px;line-height:1.75">Subscribe for new room releases, puzzle updates, and suspect expansions.</p>
+      <div class="contact-left reveal-left">
+        <div class="section-label">STAY UPDATED</div>
+        <h2>GET THE LATEST<br><span class="text-accent">CASE UPDATES</span></h2>
+        <p>Subscribe for new case releases, forensic lab expansions, AI improvements, and behind-the-scenes content.</p>
         <form class="sub-form" id="sub-form" novalidate>
           <div class="sub-row">
-            <input type="email" class="sub-input" placeholder="Your email address" autocomplete="email"/>
-            <button type="submit" class="btn-primary">SUBSCRIBE</button>
+            <input type="email" id="sub-email" class="sub-input" placeholder="Enter your email address" autocomplete="email"/>
+            <button type="submit" class="cv-btn-primary sub-btn">SUBSCRIBE</button>
           </div>
-          <div class="sub-msg" id="sub-msg"></div>
+          <div class="sub-msg" id="sub-msg" aria-live="polite"></div>
         </form>
+        <div class="platform-row">
+          <span class="plat-label">AVAILABLE ON</span>
+          <div class="plat-items">
+            <div class="plat-item">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+              Windows
+            </div>
+            <div class="plat-item">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09z"/></svg>
+              macOS
+            </div>
+            <div class="plat-item">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.718L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0z"/></svg>
+              Steam
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="reveal reveal-right">
+      <div class="contact-right reveal-right">
         <div class="social-card">
-          <h3>COMMUNITY</h3>
+          <h3>JOIN THE COMMUNITY</h3>
           <div class="social-links">
-            <a class="social-link" href="#">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M20.317 4.37a19.8 19.8 0 0 0-4.885-1.515.07.07 0 0 0-.079.037 13.7 13.7 0 0 0-.608 1.25 18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.042.032.055a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
-              Discord — Join the Community
+            <a class="social-link-item" href="#">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20.317 4.37a19.8 19.8 0 0 0-4.885-1.515.07.07 0 0 0-.079.037 13.7 13.7 0 0 0-.608 1.25 18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.042.032.055a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+              Discord Community
             </a>
-            <a class="social-link" href="#">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              Follow on X — Case updates
+            <a class="social-link-item" href="#">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              Follow on X
             </a>
-            <a class="social-link" href="#">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-              YouTube — Gameplay & walkthroughs
+            <a class="social-link-item" href="#">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              Watch on YouTube
             </a>
           </div>
         </div>
@@ -465,29 +505,66 @@
   </div>
 </section>
 
-<!-- FOOTER -->
+<!-- ═══ FOOTER ═══════════════════════════════════════════════ -->
 <footer class="cv-footer">
   <div class="footer-inner">
-    <div style="display:flex;align-items:center;gap:10px">
-      <svg viewBox="0 0 36 36" fill="none" width="26" height="26">
-        <circle cx="18" cy="18" r="16" stroke="#c8a86b" stroke-width="1.8"/>
-        <circle cx="18" cy="18" r="3"  fill="#c8a86b"/>
+    <div class="footer-brand">
+      <svg viewBox="0 0 36 36" fill="none" width="28" height="28">
+        <circle cx="18" cy="18" r="16" stroke="#4a9eff" stroke-width="2"/>
+        <circle cx="18" cy="18" r="9"  stroke="#4a9eff" stroke-width="1.5"/>
+        <circle cx="18" cy="18" r="3"  fill="#4a9eff"/>
       </svg>
-      <span style="font-family:var(--serif);font-size:.88rem;color:var(--accent2)">CYBERVAULT</span>
+      <span class="cv-brand-name" style="font-size:.92rem">CYBERVAULT</span>
     </div>
     <nav class="footer-links">
       <a href="#about">About</a>
-      <a href="#rooms">Rooms</a>
       <a href="#features">Features</a>
-      <a href="/cybervault-fp">Play</a>
-      <a href="/cybervault-horror">Horror</a>
+      <a href="#game-section">Game</a>
+      <a href="#lab-section">Lab</a>
+      <a href="#ai-section">AI</a>
       <a href="#contact">Contact</a>
     </nav>
-    <span class="footer-copy">© 2025 CyberVault Murder Mystery Platform</span>
+    <span class="footer-copy">© 2025 CyberVault Forensic Investigation Platform</span>
   </div>
 </footer>
 
-<button class="scroll-top" id="scroll-top" aria-label="Back to top">↑</button>
+<!-- ═══ FLOATING AI CHATBOT ═══════════════════════════════════ -->
+<div id="ai-chatbot">
+  <div id="ai-chat-panel" role="dialog" aria-label="ForensicAI Assistant">
+    <div class="acp-header">
+      <div class="acp-dot"></div>
+      <span class="acp-title">ForensicAI</span>
+      <button class="acp-close-btn" id="acp-close" aria-label="Close">✕</button>
+    </div>
+    <div class="acp-messages" id="acp-messages">
+      <div class="acp-msg">
+        <div class="acp-msg-av acp-bot-av">AI</div>
+        <div>
+          <div class="acp-msg-text">Hello, Investigator! I'm ForensicAI, trained on 18 forensic science disciplines.<br>Ask me anything — DNA, fingerprints, CCTV, digital forensics, blood spatter, toxicology, and more.</div>
+          <div class="acp-meta">Just now</div>
+        </div>
+      </div>
+    </div>
+    <div class="acp-quick">
+      <button class="acp-quick-btn">How does DNA profiling work?</button>
+      <button class="acp-quick-btn">What is chain of custody?</button>
+      <button class="acp-quick-btn">Explain blood spatter</button>
+      <button class="acp-quick-btn">Digital forensics basics</button>
+    </div>
+    <div class="acp-input-row">
+      <input class="acp-input" id="acp-chat-input" placeholder="Ask a forensic question…" autocomplete="off"/>
+      <button class="acp-send" id="acp-chat-send" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
+    </div>
+    <div class="acp-footer">ForensicAI · Trained knowledge base · Not connected to external APIs</div>
+  </div>
+  <button class="ai-toggle-btn" id="ai-chat-toggle" aria-label="Open ForensicAI">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </button>
+</div>
+
+<button class="cv-scroll-top" id="cv-scroll-top" aria-label="Scroll to top">↑</button>
 
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
