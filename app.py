@@ -2,8 +2,18 @@
 import os
 from flask import Flask, render_template, jsonify, request
 
+# Load .env when running locally; on Vercel the env vars are set in the dashboard
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "cv-2025")
+# .env uses FLASK_SECRET_KEY; fall back to a generic name then a hardcoded default
+app.config["SECRET_KEY"] = (
+    os.getenv("FLASK_SECRET_KEY") or os.getenv("SECRET_KEY") or "cv-2025-change-me"
+)
 
 @app.route("/")
 def index():

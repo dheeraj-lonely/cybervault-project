@@ -294,8 +294,24 @@ if (subForm) {
       if (subMsg) { subMsg.textContent = 'Please enter a valid email address.'; subMsg.style.color = 'var(--red)'; }
       return;
     }
-    if (subMsg) { subMsg.textContent = '✓ Subscribed! You\'ll receive new case updates.'; subMsg.style.color = 'var(--green)'; }
-    if (subEmail) subEmail.value = '';
+    // POST to the backend endpoint
+    fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        if (subMsg) { subMsg.textContent = '✓ Subscribed! You\'ll receive new case updates.'; subMsg.style.color = 'var(--green)'; }
+        if (subEmail) subEmail.value = '';
+      } else {
+        if (subMsg) { subMsg.textContent = data.message || 'Subscription failed. Please try again.'; subMsg.style.color = 'var(--red)'; }
+      }
+    })
+    .catch(function() {
+      if (subMsg) { subMsg.textContent = 'Network error. Please try again.'; subMsg.style.color = 'var(--red)'; }
+    });
   });
 }
 
