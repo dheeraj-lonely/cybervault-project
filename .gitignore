@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+.venv/
+
+# Environment — never commit secrets
+.env
+.env.*
+
+# IDE & OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel/
+
+# GitHub Skills (not part of the app)
+.github/
