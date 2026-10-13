@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/enhancements.css') }}"/>
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
 </head>
 <body>
@@ -449,6 +450,22 @@
   </div>
 </section>
 
+<!-- ═══ VAULT DEFENDER MINI-GAME ═══════════════════════════ -->
+<section id="vault-game" class="cv-game-section">
+  <div class="cv-container">
+    <div class="section-label">MINI-GAME</div>
+    <h2 class="section-heading" style="text-align:center">VAULT DEFENDER — <span class="text-accent">LIVE DEMO</span></h2>
+    <p style="text-align:center;color:var(--txt2);max-width:520px;margin:0 auto 28px;font-size:.92rem">
+      Protect the central vault from incoming data orbs. Move your cursor to aim — click or tap to fire.
+      Every orb destroyed scores points. Don't let them breach the core.
+    </p>
+    <div class="cv-game-canvas-wrap">
+      <canvas id="cv-vault-canvas" height="400"></canvas>
+    </div>
+    <p class="cv-game-label">VAULT DEFENDER v1.0 · CANVAS ENGINE · CLICK TO START</p>
+  </div>
+</section>
+
 <!-- ═══ CONTACT ══════════════════════════════════════════════ -->
 <section id="contact">
   <div class="cv-container">
@@ -566,6 +583,52 @@
 
 <button class="cv-scroll-top" id="cv-scroll-top" aria-label="Scroll to top">↑</button>
 
+<script src="{{ url_for('static', filename='js/cyber-game-canvas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+/* ── Boot canvas game ───────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+  CyberGameCanvas.init('cv-vault-canvas');
+});
+
+/* ── Ripple effect on all primary buttons ────────────────── */
+document.querySelectorAll('.cv-btn-primary, .menu-btn, .cv-btn-play').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    var rect = btn.getBoundingClientRect();
+    var rip  = document.createElement('span');
+    rip.className = 'cv-ripple';
+    rip.style.cssText = 'width:60px;height:60px;left:' + (e.clientX - rect.left - 30) + 'px;top:' + (e.clientY - rect.top - 30) + 'px';
+    btn.appendChild(rip);
+    setTimeout(function() { rip.remove(); }, 560);
+    /* Web Audio micro-click feedback */
+    try {
+      var ac = new (window.AudioContext || window.webkitAudioContext)();
+      var o  = ac.createOscillator();
+      var g  = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.frequency.value = 880; o.type = 'sine';
+      g.gain.setValueAtTime(.1, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + .08);
+      o.start(); o.stop(ac.currentTime + .08);
+    } catch(e) {}
+  });
+});
+
+/* ── Mouse-track ripple highlight on CyberCard-style divs ── */
+document.querySelectorAll('.feat-card, .about-card, .lab-preview-card').forEach(function(card) {
+  card.addEventListener('mousemove', function(e) {
+    var r  = card.getBoundingClientRect();
+    var mx = ((e.clientX - r.left) / r.width  * 100).toFixed(1) + '%';
+    var my = ((e.clientY - r.top)  / r.height * 100).toFixed(1) + '%';
+    card.style.setProperty('--mx', mx);
+    card.style.setProperty('--my', my);
+  });
+});
+
+/* ── Nav CTA add glass-card class ────────────────────────── */
+document.querySelectorAll('.hero-case-card, #ai-inline-chat').forEach(function(el) {
+  el.classList.add('glass-card');
+});
+</script>
 </body>
 </html>
